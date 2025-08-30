@@ -14,7 +14,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recha
 type Expense = { id: string; category: string; amount: number };
 
 function toCurrency(n: number) {
-  return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(isFinite(n) ? n : 0);
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(isFinite(n) ? n : 0);
 }
 
 function csvEscape(val: string) {
@@ -84,7 +84,7 @@ const Index = () => {
 
   function handleExportCSV() {
     const rows: string[][] = [];
-    const heading = ["Month", month || "(unspecified)"];
+    const heading = ["Year", month || "(unspecified)"];
     rows.push(heading);
     rows.push(["Salary", numericSalary.toString()]);
     rows.push(["Total Expenses", totals.totalExpenses.toString()]);
@@ -97,7 +97,7 @@ const Index = () => {
       .reverse()
       .forEach((e) => rows.push([e.category, e.amount.toString(), ((e.amount / (numericSalary || 1)) * 100).toFixed(2)]));
 
-    exportCSV(`finance-${month || "report"}.csv`, rows);
+    exportCSV(`annual-finance-${month || "report"}.csv`, rows);
     toast({ title: "CSV exported", description: "Your report has been downloaded." });
   }
 
@@ -109,7 +109,7 @@ const Index = () => {
       <header className="container mx-auto pt-10 pb-4">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">Personal Finance Manager</h1>
         <p className="mt-2 text-muted-foreground max-w-prose">
-          Track salary, add expenses, view charts, and export a CSV report.
+          Track annual salary, add yearly expenses, view charts, and export a CSV report.
         </p>
       </header>
 
@@ -121,15 +121,15 @@ const Index = () => {
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid gap-2">
-                <Label htmlFor="month">Month (optional)</Label>
-                <Input id="month" placeholder="e.g. 2025-08" value={month} onChange={(e) => setMonth(e.target.value)} />
+                <Label htmlFor="month">Year (optional)</Label>
+                <Input id="month" placeholder="e.g. 2025" value={month} onChange={(e) => setMonth(e.target.value)} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="salary">Monthly Salary</Label>
+                <Label htmlFor="salary">Annual Salary</Label>
                 <Input
                   id="salary"
                   inputMode="decimal"
-                  placeholder="Enter salary"
+                  placeholder="Enter annual salary"
                   value={salary}
                   onChange={(e) => setSalary(e.target.value)}
                 />
@@ -141,8 +141,8 @@ const Index = () => {
                   <Input id="category" placeholder="e.g. Rent" value={category} onChange={(e) => setCategory(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="amount">Amount</Label>
-                  <Input id="amount" inputMode="decimal" placeholder="e.g. 1200" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                  <Label htmlFor="amount">Annual Amount</Label>
+                  <Input id="amount" inputMode="decimal" placeholder="e.g. 120000" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
               </div>
               <div className="flex gap-3">
@@ -180,7 +180,7 @@ const Index = () => {
                     <TableRow>
                       <TableHead>Category</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">% of Salary</TableHead>
+                      <TableHead className="text-right">% of Annual Salary</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -237,10 +237,10 @@ const Index = () => {
                 <CardTitle>Spending Tips</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <p>Your expenses exceed 70% of your income. Consider:</p>
+                <p>Your annual expenses exceed 70% of your income. Consider:</p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Set a target to save at least 20% by reducing variable costs (dining, subscriptions).</li>
-                  <li>Negotiate recurring bills (rent, internet, insurance) or look for cheaper alternatives.</li>
+                  <li>Set a target to save at least 20% annually by reducing variable costs (dining, subscriptions, travel).</li>
+                  <li>Negotiate recurring annual bills (insurance premiums, memberships) or look for cheaper alternatives.</li>
                   <li>Automate savings on payday to “pay yourself first.”</li>
                 </ul>
               </CardContent>
