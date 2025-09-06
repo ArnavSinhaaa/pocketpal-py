@@ -1,253 +1,95 @@
-import { useMemo, useState } from "react";
-import AmbientGradient from "@/components/AmbientGradient";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "@/hooks/use-toast";
-import { Trash2, Download } from "lucide-react";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
-
-
-type Expense = { id: string; category: string; amount: number };
-
-function toCurrency(n: number) {
-  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(isFinite(n) ? n : 0);
-}
-
-function csvEscape(val: string) {
-  if (val.includes(",") || val.includes("\n") || val.includes("\"")) {
-    return `"${val.replace(/\"/g, '""')}"`;
-  }
-  return val;
-}
-
-function exportCSV(filename: string, rows: string[][]) {
-  const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\n");
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { ExpenseTracker } from "@/components/dashboard/ExpenseTracker";
+import { GoalsTracker } from "@/components/dashboard/GoalsTracker";
+import { BillReminders } from "@/components/dashboard/BillReminders";
+import { Achievements } from "@/components/dashboard/Achievements";
+import { Wallet, Target, Bell, Trophy, TrendingUp } from "lucide-react";
 
 const Index = () => {
-  const [salary, setSalary] = useState<string>("");
-  const [month, setMonth] = useState<string>("");
-  const [category, setCategory] = useState<string>("");
-  const [amount, setAmount] = useState<string>("");
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-
-  const numericSalary = useMemo(() => {
-    const n = Number(salary);
-    return isFinite(n) && n >= 0 ? n : 0;
-  }, [salary]);
-
-  const totals = useMemo(() => {
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-    const netSavings = numericSalary - totalExpenses;
-    const savingsPct = numericSalary > 0 ? (netSavings / numericSalary) * 100 : 0;
-    return { totalExpenses, netSavings, savingsPct };
-  }, [expenses, numericSalary]);
-
-  const breakdown = useMemo(() => {
-    return expenses.map((e) => ({
-      name: e.category || "(uncategorized)",
-      amount: e.amount,
-      percentOfIncome: numericSalary > 0 ? (e.amount / numericSalary) * 100 : 0,
-    }));
-  }, [expenses, numericSalary]);
-
-  function addExpense() {
-    try {
-      if (!category.trim()) throw new Error("Enter a category name.");
-      const n = Number(amount);
-      if (!isFinite(n) || n <= 0) throw new Error("Enter a valid amount > 0.");
-      const item: Expense = { id: crypto.randomUUID(), category: category.trim(), amount: n };
-      setExpenses((prev) => [item, ...prev]);
-      setCategory("");
-      setAmount("");
-      toast({ title: "Expense added", description: `${item.category} - ${toCurrency(item.amount)}` });
-    } catch (err: any) {
-      toast({ title: "Invalid input", description: err.message });
-    }
-  }
-
-  function removeExpense(id: string) {
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
-  }
-
-  function handleExportCSV() {
-    const rows: string[][] = [];
-    const heading = ["Year", month || "(unspecified)"];
-    rows.push(heading);
-    rows.push(["Salary", numericSalary.toString()]);
-    rows.push(["Total Expenses", totals.totalExpenses.toString()]);
-    rows.push(["Net Savings", totals.netSavings.toString()]);
-    rows.push(["Savings %", totals.savingsPct.toFixed(2)]);
-    rows.push([]);
-    rows.push(["Category", "Amount", "% of Income"]);
-    expenses
-      .slice()
-      .reverse()
-      .forEach((e) => rows.push([e.category, e.amount.toString(), ((e.amount / (numericSalary || 1)) * 100).toFixed(2)]));
-
-    exportCSV(`annual-finance-${month || "report"}.csv`, rows);
-    toast({ title: "CSV exported", description: "Your report has been downloaded." });
-  }
-
-  const showTips = totals.totalExpenses > numericSalary * 0.7 && numericSalary > 0;
-
   return (
-    <div className="relative min-h-screen">
-      <AmbientGradient />
-      <header className="container mx-auto pt-10 pb-4">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">Personal Finance Manager</h1>
-        <p className="mt-2 text-muted-foreground max-w-prose">
-          Track annual salary, add yearly expenses, view charts, and export a CSV report.
-        </p>
-      </header>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b bg-gradient-card">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center">
+                <Wallet className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">Personal Finance Manager</h1>
+                <p className="text-muted-foreground">Track expenses, manage budgets, and achieve your financial goals</p>
+              </div>
+            </div>
+            <ThemeToggle />
+          </div>
+        </div>
+      </div>
 
-      <main className="container mx-auto pb-16">
-        <section aria-labelledby="inputs" className="grid gap-6 md:grid-cols-2">
-          <Card className="relative overflow-hidden">
-            <CardHeader>
-              <CardTitle>Inputs</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-2">
-                <Label htmlFor="month">Year (optional)</Label>
-                <Input id="month" placeholder="e.g. 2025" value={month} onChange={(e) => setMonth(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="salary">Annual Salary</Label>
-                <Input
-                  id="salary"
-                  inputMode="decimal"
-                  placeholder="Enter annual salary"
-                  value={salary}
-                  onChange={(e) => setSalary(e.target.value)}
-                />
-              </div>
-              <Separator />
-              <div className="grid md:grid-cols-2 gap-3">
-                <div className="grid gap-2">
-                  <Label htmlFor="category">Expense Category</Label>
-                  <Input id="category" placeholder="e.g. Rent" value={category} onChange={(e) => setCategory(e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="amount">Annual Amount</Label>
-                  <Input id="amount" inputMode="decimal" placeholder="e.g. 120000" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <Button onClick={addExpense}>Add Expense</Button>
-                <Button variant="secondary" onClick={() => { setCategory(""); setAmount(""); }}>Clear</Button>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <Tabs defaultValue="expenses" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
+            <TabsTrigger value="expenses" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">Expenses</span>
+            </TabsTrigger>
+            <TabsTrigger value="goals" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              <span className="hidden sm:inline">Goals</span>
+            </TabsTrigger>
+            <TabsTrigger value="bills" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              <span className="hidden sm:inline">Bills</span>
+            </TabsTrigger>
+            <TabsTrigger value="achievements" className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" />
+              <span className="hidden sm:inline">Rewards</span>
+            </TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Overview</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between"><span>Total Income</span><span className="font-semibold">{toCurrency(numericSalary)}</span></div>
-              <div className="flex items-center justify-between"><span>Total Expenses</span><span className="font-semibold">{toCurrency(totals.totalExpenses)}</span></div>
-              <div className="flex items-center justify-between"><span>Net Savings</span><span className="font-semibold">{toCurrency(totals.netSavings)}</span></div>
-              <div className="flex items-center justify-between"><span>Savings %</span><span className="font-semibold">{isFinite(totals.savingsPct) ? totals.savingsPct.toFixed(2) + "%" : "-"}</span></div>
-              <div className="pt-3">
-                <Button onClick={handleExportCSV} className="w-full"><Download className="mr-2 h-4 w-4" />Export CSV</Button>
+          <TabsContent value="expenses" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Expense Tracking</h2>
+                <p className="text-muted-foreground">Monitor your spending and manage your budget</p>
               </div>
-            </CardContent>
-          </Card>
-        </section>
+            </div>
+            <ExpenseTracker />
+          </TabsContent>
 
-        <section aria-labelledby="table" className="mt-8 grid gap-6 md:grid-cols-5">
-          <Card className="md:col-span-3">
-            <CardHeader>
-              <CardTitle>Expense Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Category</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">% of Annual Salary</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {expenses.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground">No expenses yet. Add your first above.</TableCell>
-                      </TableRow>
-                    ) : (
-                      expenses.map((e) => (
-                        <TableRow key={e.id}>
-                          <TableCell>{e.category}</TableCell>
-                          <TableCell className="text-right">{toCurrency(e.amount)}</TableCell>
-                          <TableCell className="text-right">{numericSalary > 0 ? ((e.amount / numericSalary) * 100).toFixed(2) + "%" : "-"}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" onClick={() => removeExpense(e.id)} aria-label={`Remove ${e.category}`}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+          <TabsContent value="goals" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Financial Goals</h2>
+                <p className="text-muted-foreground">Set targets and track your progress toward financial milestones</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <GoalsTracker />
+          </TabsContent>
 
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Expense Distribution</CardTitle>
-            </CardHeader>
-            <CardContent style={{ height: 320 }}>
-              {expenses.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-muted-foreground">Add expenses to see the chart</div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={breakdown}>
-                    <XAxis dataKey="name" hide />
-                    <YAxis hide />
-                    <Tooltip formatter={(v: any, n) => (n === "amount" ? toCurrency(Number(v)) : `${Number(v).toFixed(2)}%`)} />
-                    <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-        </section>
+          <TabsContent value="bills" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Bill Management</h2>
+                <p className="text-muted-foreground">Never miss a payment with smart reminders and tracking</p>
+              </div>
+            </div>
+            <BillReminders />
+          </TabsContent>
 
-        {showTips && (
-          <section className="mt-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Spending Tips</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <p>Your annual expenses exceed 70% of your income. Consider:</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Set a target to save at least 20% annually by reducing variable costs (dining, subscriptions, travel).</li>
-                  <li>Negotiate recurring annual bills (insurance premiums, memberships) or look for cheaper alternatives.</li>
-                  <li>Automate savings on payday to “pay yourself first.”</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </section>
-        )}
-      </main>
+          <TabsContent value="achievements" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Achievements & Rewards</h2>
+                <p className="text-muted-foreground">Earn points and unlock badges for reaching financial milestones</p>
+              </div>
+            </div>
+            <Achievements />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

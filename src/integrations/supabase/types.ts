@@ -14,7 +14,296 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      achievements: {
+        Row: {
+          badge_color: string | null
+          badge_icon: string | null
+          category: string
+          description: string | null
+          earned_at: string
+          id: string
+          points: number | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          badge_color?: string | null
+          badge_icon?: string | null
+          category: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          points?: number | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          badge_color?: string | null
+          badge_icon?: string | null
+          category?: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          points?: number | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bill_reminders: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          due_date: string
+          frequency: string | null
+          id: string
+          is_paid: boolean | null
+          reminder_days: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          due_date: string
+          frequency?: string | null
+          id?: string
+          is_paid?: boolean | null
+          reminder_days?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          due_date?: string
+          frequency?: string | null
+          id?: string
+          is_paid?: boolean | null
+          reminder_days?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      budget_goals: {
+        Row: {
+          category: string
+          created_at: string
+          current_amount: number | null
+          id: string
+          month: string
+          target_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          current_amount?: number | null
+          id?: string
+          month: string
+          target_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          current_amount?: number | null
+          id?: string
+          month?: string
+          target_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expense_categories: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          category_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          month: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          month: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          month?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_goals: {
+        Row: {
+          category: string | null
+          created_at: string
+          current_amount: number | null
+          description: string | null
+          id: string
+          is_completed: boolean | null
+          target_amount: number
+          target_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          current_amount?: number | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          target_amount: number
+          target_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          current_amount?: number | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          target_amount?: number
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          preferred_currency: string | null
+          salary: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          preferred_currency?: string | null
+          salary?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          preferred_currency?: string | null
+          salary?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          budget_streak: number | null
+          created_at: string
+          goals_completed: number | null
+          id: string
+          savings_streak: number | null
+          total_points: number | null
+          total_saved: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_streak?: number | null
+          created_at?: string
+          goals_completed?: number | null
+          id?: string
+          savings_streak?: number | null
+          total_points?: number | null
+          total_saved?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_streak?: number | null
+          created_at?: string
+          goals_completed?: number | null
+          id?: string
+          savings_streak?: number | null
+          total_points?: number | null
+          total_saved?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
