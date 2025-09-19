@@ -6,13 +6,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2, Plus, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Trash2, Plus, TrendingUp, TrendingDown, AlertCircle, IndianRupee, Calculator, PieChart, Edit } from "lucide-react";
 import { useExpenses } from "@/hooks/useExpenses";
+import { IncomeSection } from "./IncomeSection";
+import { ExpensePieChart } from "./ExpensePieChart";
 
 const EXPENSE_CATEGORIES = [
-  "Food & Dining", "Transportation", "Entertainment", "Healthcare", 
-  "Shopping", "Utilities", "Education", "Travel", "Investment", "Other"
+  { name: "Food & Dining", icon: "🍽️" },
+  { name: "Transportation", icon: "🚗" },
+  { name: "Entertainment", icon: "🎬" },
+  { name: "Healthcare", icon: "🏥" },
+  { name: "Shopping", icon: "🛍️" },
+  { name: "Utilities", icon: "⚡" },
+  { name: "Education", icon: "📚" },
+  { name: "Travel", icon: "✈️" },
+  { name: "Investment", icon: "💰" },
+  { name: "Other", icon: "📝" }
 ];
+
+// Indian Tax Slabs for FY 2025-26
+const calculateIncomeTax = (annualIncome: number): number => {
+  if (annualIncome <= 400000) return 0;
+  if (annualIncome <= 800000) return (annualIncome - 400000) * 0.05;
+  if (annualIncome <= 1200000) return 20000 + (annualIncome - 800000) * 0.10;
+  if (annualIncome <= 1600000) return 60000 + (annualIncome - 1200000) * 0.15;
+  if (annualIncome <= 2000000) return 120000 + (annualIncome - 1600000) * 0.20;
+  if (annualIncome <= 2400000) return 200000 + (annualIncome - 2000000) * 0.25;
+  return 300000 + (annualIncome - 2400000) * 0.30;
+};
 
 const toCurrency = (n: number) => new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -20,26 +42,31 @@ const toCurrency = (n: number) => new Intl.NumberFormat('en-IN', {
 }).format(n);
 
 export function ExpenseTracker() {
-  const [salary, setSalary] = useState<string>('');
   const [expenseCategory, setExpenseCategory] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [annualSalary, setAnnualSalary] = useState<number>(0);
   
   const { expenses, loading, addExpense, removeExpense } = useExpenses();
 
-  const numericSalary = useMemo(() => {
-    const parsed = parseFloat(salary);
-    return isNaN(parsed) ? 0 : parsed;
-  }, [salary]);
-
-  const totals = useMemo(() => {
+  const financialData = useMemo(() => {
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const monthlyIncome = numericSalary / 12;
-    const netSavings = monthlyIncome - totalExpenses;
-    const savingsPercentage = monthlyIncome > 0 ? (netSavings / monthlyIncome) * 100 : 0;
+    const estimatedTax = calculateIncomeTax(annualSalary);
+    const netAnnualIncome = annualSalary - estimatedTax;
+    const monthlyNetIncome = netAnnualIncome / 12;
+    const netSavings = monthlyNetIncome - totalExpenses;
+    const savingsPercentage = monthlyNetIncome > 0 ? (netSavings / monthlyNetIncome) * 100 : 0;
     
-    return { totalExpenses, netSavings, savingsPercentage, monthlyIncome };
-  }, [expenses, numericSalary]);
+    return { 
+      totalExpenses, 
+      netSavings, 
+      savingsPercentage, 
+      monthlyNetIncome,
+      estimatedTax,
+      netAnnualIncome,
+      taxableIncome: annualSalary
+    };
+  }, [expenses, annualSalary]);
 
   const handleAddExpense = async () => {
     if (!expenseCategory || !amount || parseFloat(amount) <= 0) return;
@@ -62,9 +89,9 @@ export function ExpenseTracker() {
       <div className="space-y-6">
         <Card className="shadow-card">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-10" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-24" />
               ))}
             </div>
           </CardContent>
@@ -75,92 +102,160 @@ export function ExpenseTracker() {
 
   return (
     <div className="space-y-6">
-      {/* Input Section */}
+      {/* Income Section */}
+      <IncomeSection 
+        annualSalary={annualSalary}
+        onSalaryChange={setAnnualSalary}
+        estimatedTax={financialData.estimatedTax}
+        netAnnualIncome={financialData.netAnnualIncome}
+      />
+
+      {/* Quick Expense Entry */}
       <Card className="shadow-card border-0 bg-gradient-card">
         <CardHeader className="bg-gradient-primary/10 rounded-t-lg">
           <CardTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
             Add Expense
           </CardTitle>
-          <CardDescription>Track your expenses and manage your budget</CardDescription>
+          <CardDescription>Quick and easy expense tracking</CardDescription>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Input
-              type="number"
-              placeholder="Annual Salary"
-              value={salary}
-              onChange={(e) => setSalary(e.target.value)}
-              className="focus-visible:ring-primary"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <Select value={expenseCategory} onValueChange={setExpenseCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Category" />
+              <SelectTrigger className="h-12">
+                <SelectValue placeholder="Select Category" />
               </SelectTrigger>
               <SelectContent>
                 {EXPENSE_CATEGORIES.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  <SelectItem key={cat.name} value={cat.name}>
+                    <div className="flex items-center gap-2">
+                      <span>{cat.icon}</span>
+                      <span>{cat.name}</span>
+                    </div>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Input
               type="number"
-              placeholder="Amount"
+              placeholder="Amount (₹)"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="focus-visible:ring-primary"
+              className="h-12 text-lg focus-visible:ring-primary"
             />
-            <Button 
-              onClick={handleAddExpense} 
-              className="bg-gradient-primary hover:opacity-90"
-              disabled={isSubmitting || !expenseCategory || !amount}
-            >
-              {isSubmitting ? "Adding..." : "Add Expense"}
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleAddExpense} 
+                className="bg-gradient-primary hover:opacity-90 flex-1 h-12"
+                disabled={isSubmitting || !expenseCategory || !amount}
+              >
+                {isSubmitting ? "Adding..." : "Add Expense"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {setAmount(''); setExpenseCategory('');}}
+                className="h-12 px-3"
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+          
+          {/* Quick Add Categories */}
+          <div className="flex flex-wrap gap-2">
+            {EXPENSE_CATEGORIES.slice(0, 5).map(cat => (
+              <Button
+                key={cat.name}
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpenseCategory(cat.name)}
+                className="text-xs"
+              >
+                <span className="mr-1">{cat.icon}</span>
+                {cat.name}
+              </Button>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="shadow-card">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
-                <p className="text-2xl font-bold text-destructive">{toCurrency(totals.totalExpenses)}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-destructive" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-card">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Net Savings</p>
-                <p className={`text-2xl font-bold ${totals.netSavings >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {totals.monthlyIncome > 0 ? toCurrency(totals.netSavings) : "Set salary"}
-                </p>
-              </div>
-              <TrendingDown className={`h-8 w-8 ${totals.netSavings >= 0 ? 'text-success' : 'text-destructive'}`} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-card">
-          <CardContent className="p-6">
-            <div className="space-y-2">
+      {/* Financial Overview Dashboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Financial Cards */}
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="shadow-card">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">Savings Rate</p>
-                <Badge variant={totals.savingsPercentage >= 20 ? "default" : "destructive"}>
-                  {totals.monthlyIncome > 0 ? `${totals.savingsPercentage.toFixed(1)}%` : "Set salary"}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Monthly Net Income</p>
+                  <p className="text-2xl font-bold text-success">{toCurrency(financialData.monthlyNetIncome)}</p>
+                  <p className="text-xs text-muted-foreground">After tax deduction</p>
+                </div>
+                <IndianRupee className="h-8 w-8 text-success" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
+                  <p className="text-2xl font-bold text-destructive">{toCurrency(financialData.totalExpenses)}</p>
+                  <p className="text-xs text-muted-foreground">This month</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-destructive" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Net Savings</p>
+                  <p className={`text-2xl font-bold ${financialData.netSavings >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {annualSalary > 0 ? toCurrency(financialData.netSavings) : "Set salary first"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Monthly remainder</p>
+                </div>
+                <TrendingDown className={`h-8 w-8 ${financialData.netSavings >= 0 ? 'text-success' : 'text-destructive'}`} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Savings Rate</p>
+                  <p className={`text-2xl font-bold ${financialData.savingsPercentage >= 20 ? 'text-success' : 'text-warning'}`}>
+                    {annualSalary > 0 ? `${financialData.savingsPercentage.toFixed(1)}%` : "0.0%"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Target: 20%+</p>
+                </div>
+                <Badge variant={financialData.savingsPercentage >= 20 ? "default" : "destructive"}>
+                  {financialData.savingsPercentage >= 20 ? "Good" : "Improve"}
                 </Badge>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Expense Breakdown Chart */}
+        <div className="lg:col-span-1">
+          <Card className="shadow-card h-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PieChart className="h-5 w-5" />
+                Expense Breakdown
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ExpensePieChart expenses={expenses} />
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Expenses List */}
