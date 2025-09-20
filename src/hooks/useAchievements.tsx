@@ -67,7 +67,7 @@ export const useAchievements = () => {
 
       if (error) throw error;
 
-      // Update achievements state
+      // Update achievements state immediately
       setAchievements(prev => [data, ...prev]);
 
       // Update user stats total points
@@ -81,16 +81,10 @@ export const useAchievements = () => {
         await supabase
           .from('user_stats')
           .update({ 
-            total_points: currentStats.total_points + points
+            total_points: (currentStats.total_points || 0) + points
           })
           .eq('user_id', user.id);
       }
-
-      // Show celebration toast
-      toast({
-        title: "🎉 Achievement Unlocked!",
-        description: `${title} - You earned ${points} points!`,
-      });
 
     } catch (error) {
       console.error('Error awarding achievement:', error);
@@ -123,6 +117,13 @@ export const useAchievements = () => {
         description: 'Tracked 50 expenses',
         points: 100
       },
+      {
+        type: 'expense_legend',
+        condition: stats.expenses_count >= 100,
+        title: 'Expense Legend',
+        description: 'Tracked 100 expenses',
+        points: 250
+      },
       // Goal achievements
       {
         type: 'goal_setter',
@@ -130,6 +131,13 @@ export const useAchievements = () => {
         title: 'Goal Setter',
         description: 'Completed your first financial goal',
         points: 50
+      },
+      {
+        type: 'goal_achiever',
+        condition: stats.goals_completed >= 5,
+        title: 'Goal Achiever',
+        description: 'Completed 5 financial goals',
+        points: 150
       },
       // Streak achievements
       {
@@ -145,6 +153,13 @@ export const useAchievements = () => {
         title: 'Consistency Champion',
         description: 'Maintained a 7-day streak',
         points: 75
+      },
+      {
+        type: 'streak_legend',
+        condition: stats.current_streak >= 30,
+        title: 'Streak Legend',
+        description: 'Maintained a 30-day streak',
+        points: 300
       }
     ];
 
@@ -153,10 +168,41 @@ export const useAchievements = () => {
         await awardAchievement(check.type, check.title, check.description, check.points);
       }
     }
-  }, [achievements, user]);
+  }, [achievements, user, awardAchievement]);
 
   useEffect(() => {
     fetchAchievements();
+
+    // Set up real-time subscription for achievements
+    if (user) {
+      const channel = supabase
+        .channel('user_achievements_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_achievements',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            if (payload.eventType === 'INSERT' && payload.new) {
+              setAchievements(prev => {
+                const exists = prev.some(a => a.id === payload.new.id);
+                if (!exists) {
+                  return [payload.new as Achievement, ...prev];
+                }
+                return prev;
+              });
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [user]);
 
   return {

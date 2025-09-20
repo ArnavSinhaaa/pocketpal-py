@@ -65,17 +65,19 @@ export const useExpenses = () => {
 
       if (error) throw error;
 
+      // Update expenses state immediately
       setExpenses(prev => [data, ...prev]);
+      
       toast({
-        title: "Expense Added",
+        title: "✅ Expense Added",
         description: `₹${expenseData.amount.toLocaleString()} added to ${expenseData.category}`,
       });
       
-      return { success: true };
+      return { success: true, data };
     } catch (error) {
       console.error('Error adding expense:', error);
       toast({
-        title: "Error",
+        title: "❌ Error",
         description: "Failed to add expense. Please try again.",
         variant: "destructive",
       });
@@ -109,6 +111,39 @@ export const useExpenses = () => {
 
   useEffect(() => {
     fetchExpenses();
+
+    // Set up real-time subscription for expenses
+    if (user) {
+      const channel = supabase
+        .channel('expenses_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'expenses',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            if (payload.eventType === 'INSERT' && payload.new) {
+              setExpenses(prev => {
+                const exists = prev.some(e => e.id === payload.new.id);
+                if (!exists) {
+                  return [payload.new as Expense, ...prev];
+                }
+                return prev;
+              });
+            } else if (payload.eventType === 'DELETE' && payload.old) {
+              setExpenses(prev => prev.filter(e => e.id !== payload.old.id));
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [user]);
 
   return {

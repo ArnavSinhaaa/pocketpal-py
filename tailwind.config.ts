@@ -114,6 +114,31 @@ export default {
 					'50%': { transform: 'scale(1.05)' },
 					'70%': { transform: 'scale(0.9)' },
 					'100%': { transform: 'scale(1)', opacity: '1' }
+				},
+				// Achievement specific animations
+				'achievement-glow': {
+					'0%': { boxShadow: '0 0 20px hsl(var(--success) / 0.3)' },
+					'50%': { boxShadow: '0 0 30px hsl(var(--success) / 0.6)' },
+					'100%': { boxShadow: '0 0 20px hsl(var(--success) / 0.3)' }
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0px)' },
+					'50%': { transform: 'translateY(-4px)' }
+				},
+				'sparkle': {
+					'0%, 100%': { opacity: '1', transform: 'scale(1) rotate(0deg)' },
+					'50%': { opacity: '0.7', transform: 'scale(1.2) rotate(180deg)' }
+				},
+				'celebration': {
+					'0%': { transform: 'scale(0.5) rotate(-180deg)', opacity: '0' },
+					'25%': { transform: 'scale(1.1) rotate(-90deg)', opacity: '0.8' },
+					'50%': { transform: 'scale(0.9) rotate(0deg)', opacity: '1' },
+					'75%': { transform: 'scale(1.05) rotate(45deg)', opacity: '1' },
+					'100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' }
+				},
+				'progress-fill': {
+					'0%': { width: '0%' },
+					'100%': { width: 'var(--progress-width)' }
 				}
 			},
 			animation: {
@@ -122,7 +147,13 @@ export default {
 				'fade-in': 'fade-in 0.3s ease-out',
 				'scale-in': 'scale-in 0.2s ease-out',
 				'slide-up': 'slide-up 0.3s ease-out',
-				'bounce-in': 'bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
+				'bounce-in': 'bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+				// Achievement animations
+				'achievement-glow': 'achievement-glow 2s ease-in-out infinite',
+				'float': 'float 3s ease-in-out infinite',
+				'sparkle': 'sparkle 1.5s ease-in-out infinite',
+				'celebration': 'celebration 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+				'progress-fill': 'progress-fill 1.5s ease-out'
 			},
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
