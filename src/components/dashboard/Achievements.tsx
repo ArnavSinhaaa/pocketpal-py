@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Trophy, Star, Zap, Target, TrendingUp, Award, Sparkles, Flame, Gift, Crown } from "lucide-react";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useAchievements } from "@/hooks/useAchievements";
+import { LevelProgress } from "./LevelProgress";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Achievements() {
@@ -180,6 +181,14 @@ export function Achievements() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Level Progress */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <LevelProgress totalPoints={totalPoints} />
+      </motion.div>
 
       {/* Enhanced Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

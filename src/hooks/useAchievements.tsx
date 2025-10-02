@@ -86,6 +86,22 @@ export const useAchievements = () => {
           .eq('user_id', user.id);
       }
 
+      // Show celebration notification
+      const confetti = (window as any).confetti;
+      if (confetti) {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.7 }
+        });
+      }
+      
+      toast({
+        title: `🏆 Achievement Unlocked!`,
+        description: `"${title}" - +${points} points`,
+        duration: 5000,
+      });
+
     } catch (error) {
       console.error('Error awarding achievement:', error);
     }
@@ -99,67 +115,173 @@ export const useAchievements = () => {
       {
         type: 'first_expense',
         condition: stats.expenses_count >= 1,
-        title: 'First Step',
+        title: '🎯 First Step',
         description: 'Added your first expense',
         points: 10
       },
       {
+        type: 'expense_tracker_5',
+        condition: stats.expenses_count >= 5,
+        title: '📊 Getting Organized',
+        description: 'Tracked 5 expenses',
+        points: 20
+      },
+      {
         type: 'expense_tracker',
         condition: stats.expenses_count >= 10,
-        title: 'Expense Tracker',
+        title: '💼 Expense Tracker',
         description: 'Tracked 10 expenses',
         points: 25
       },
       {
+        type: 'expense_tracker_25',
+        condition: stats.expenses_count >= 25,
+        title: '⭐ Budget Pro',
+        description: 'Tracked 25 expenses',
+        points: 50
+      },
+      {
         type: 'expense_master',
         condition: stats.expenses_count >= 50,
-        title: 'Expense Master',
+        title: '🏅 Expense Master',
         description: 'Tracked 50 expenses',
         points: 100
       },
       {
         type: 'expense_legend',
         condition: stats.expenses_count >= 100,
-        title: 'Expense Legend',
+        title: '👑 Expense Legend',
         description: 'Tracked 100 expenses',
         points: 250
+      },
+      {
+        type: 'expense_champion',
+        condition: stats.expenses_count >= 250,
+        title: '💎 Financial Champion',
+        description: 'Tracked 250 expenses',
+        points: 500
+      },
+      {
+        type: 'expense_master_500',
+        condition: stats.expenses_count >= 500,
+        title: '🌟 Master Budgeter',
+        description: 'Tracked 500 expenses',
+        points: 1000
       },
       // Goal achievements
       {
         type: 'goal_setter',
         condition: stats.goals_completed >= 1,
-        title: 'Goal Setter',
+        title: '🎯 Goal Setter',
         description: 'Completed your first financial goal',
         points: 50
       },
       {
+        type: 'goal_achiever_3',
+        condition: stats.goals_completed >= 3,
+        title: '🌱 Goal Achiever',
+        description: 'Completed 3 financial goals',
+        points: 100
+      },
+      {
         type: 'goal_achiever',
         condition: stats.goals_completed >= 5,
-        title: 'Goal Achiever',
+        title: '🚀 Goal Master',
         description: 'Completed 5 financial goals',
         points: 150
+      },
+      {
+        type: 'goal_champion',
+        condition: stats.goals_completed >= 10,
+        title: '💪 Goal Champion',
+        description: 'Completed 10 financial goals',
+        points: 300
+      },
+      {
+        type: 'goal_legend',
+        condition: stats.goals_completed >= 20,
+        title: '🏆 Goal Legend',
+        description: 'Completed 20 financial goals',
+        points: 750
       },
       // Streak achievements
       {
         type: 'streak_beginner',
         condition: stats.current_streak >= 3,
-        title: 'Getting Started',
+        title: '🔥 Getting Started',
         description: 'Maintained a 3-day streak',
         points: 15
       },
       {
+        type: 'streak_5',
+        condition: stats.current_streak >= 5,
+        title: '⚡ On Fire',
+        description: 'Maintained a 5-day streak',
+        points: 30
+      },
+      {
         type: 'streak_champion',
         condition: stats.current_streak >= 7,
-        title: 'Consistency Champion',
+        title: '🌟 Consistency Champion',
         description: 'Maintained a 7-day streak',
         points: 75
       },
       {
-        type: 'streak_legend',
+        type: 'streak_14',
+        condition: stats.current_streak >= 14,
+        title: '💎 Two-Week Warrior',
+        description: 'Maintained a 14-day streak',
+        points: 150
+      },
+      {
+        type: 'streak_30',
         condition: stats.current_streak >= 30,
-        title: 'Streak Legend',
+        title: '👑 Monthly Master',
         description: 'Maintained a 30-day streak',
         points: 300
+      },
+      {
+        type: 'streak_legend',
+        condition: stats.current_streak >= 60,
+        title: '🌈 Streak Legend',
+        description: 'Maintained a 60-day streak',
+        points: 750
+      },
+      {
+        type: 'streak_100',
+        condition: stats.current_streak >= 100,
+        title: '🎊 Centurion',
+        description: 'Maintained a 100-day streak',
+        points: 1500
+      },
+      // Points milestones
+      {
+        type: 'points_500',
+        condition: stats.total_points >= 500,
+        title: '💰 Point Collector',
+        description: 'Earned 500 points',
+        points: 50
+      },
+      {
+        type: 'points_1000',
+        condition: stats.total_points >= 1000,
+        title: '💎 Point Master',
+        description: 'Earned 1000 points',
+        points: 100
+      },
+      {
+        type: 'points_2500',
+        condition: stats.total_points >= 2500,
+        title: '🏆 Elite Member',
+        description: 'Earned 2500 points',
+        points: 250
+      },
+      {
+        type: 'points_5000',
+        condition: stats.total_points >= 5000,
+        title: '👑 VIP Legend',
+        description: 'Earned 5000 points',
+        points: 500
       }
     ];
 

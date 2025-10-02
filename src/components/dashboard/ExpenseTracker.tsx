@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Trash2, Plus, TrendingUp, TrendingDown, AlertCircle, IndianRupee, Calculator, PieChart, Edit } from "lucide-react";
 import { useExpenses } from "@/hooks/useExpenses";
+import { useProfile } from "@/hooks/useProfile";
 import { IncomeSection } from "./IncomeSection";
 import { ExpensePieChart } from "./ExpensePieChart";
 
@@ -45,9 +46,11 @@ export function ExpenseTracker() {
   const [expenseCategory, setExpenseCategory] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [annualSalary, setAnnualSalary] = useState<number>(0);
   
   const { expenses, loading, addExpense, removeExpense } = useExpenses();
+  const { profile, loading: profileLoading, updateSalary } = useProfile();
+  
+  const annualSalary = profile?.annual_salary || 0;
 
   const financialData = useMemo(() => {
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
@@ -105,7 +108,7 @@ export function ExpenseTracker() {
       {/* Income Section */}
       <IncomeSection 
         annualSalary={annualSalary}
-        onSalaryChange={setAnnualSalary}
+        onSalaryChange={updateSalary}
         estimatedTax={financialData.estimatedTax}
         netAnnualIncome={financialData.netAnnualIncome}
       />
