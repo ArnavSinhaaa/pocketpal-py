@@ -88,6 +88,8 @@ export const useGoals = () => {
 
   const updateGoal = async (id: string, updates: Partial<Goal>) => {
     try {
+      const oldGoal = goals.find(g => g.id === id);
+      
       const { data, error } = await supabase
         .from('financial_goals')
         .update(updates)
@@ -99,17 +101,54 @@ export const useGoals = () => {
 
       setGoals(prev => prev.map(goal => goal.id === id ? data : goal));
       
+      // Calculate progress percentages
+      const oldProgress = oldGoal ? (oldGoal.current_amount / oldGoal.target_amount) * 100 : 0;
+      const newProgress = (data.current_amount / data.target_amount) * 100;
+      
       // Check if goal was completed
-      if (updates.current_amount && data.current_amount >= data.target_amount) {
+      if (updates.current_amount && data.current_amount >= data.target_amount && oldProgress < 100) {
+        // Trigger confetti
+        const confetti = (window as any).confetti;
+        if (confetti) {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
+        
         toast({
           title: "🎉 Goal Completed!",
-          description: `Congratulations! You've reached your "${data.title}" goal!`,
+          description: `Congratulations! You've reached your "${data.title}" goal of ₹${data.target_amount.toLocaleString()}!`,
+          duration: 5000,
         });
-      } else {
-        toast({
-          title: "Goal Updated",
-          description: "Your progress has been saved.",
-        });
+      } 
+      // Check for milestone notifications (75%, 90%)
+      else if (updates.current_amount) {
+        if (oldProgress < 75 && newProgress >= 75) {
+          toast({
+            title: "🌟 75% Complete!",
+            description: `You're almost there! Only ₹${(data.target_amount - data.current_amount).toLocaleString()} left for "${data.title}"`,
+            duration: 4000,
+          });
+        } else if (oldProgress < 90 && newProgress >= 90) {
+          toast({
+            title: "🔥 90% Complete!",
+            description: `So close! Just ₹${(data.target_amount - data.current_amount).toLocaleString()} more to reach "${data.title}"`,
+            duration: 4000,
+          });
+        } else if (oldProgress < 50 && newProgress >= 50) {
+          toast({
+            title: "🎯 Halfway There!",
+            description: `Great progress on "${data.title}"! Keep it up!`,
+            duration: 3000,
+          });
+        } else {
+          toast({
+            title: "💰 Progress Updated",
+            description: `+₹${(data.current_amount - oldGoal!.current_amount).toLocaleString()} added to "${data.title}"`,
+          });
+        }
       }
     } catch (error) {
       console.error('Error updating goal:', error);

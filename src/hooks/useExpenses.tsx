@@ -66,7 +66,71 @@ export const useExpenses = () => {
       if (error) throw error;
 
       // Update expenses state immediately
-      setExpenses(prev => [data, ...prev]);
+      setExpenses(prev => {
+        const newExpenses = [data, ...prev];
+        const count = newExpenses.length;
+        
+        // Check for milestones
+        if (count === 5) {
+          setTimeout(() => {
+            toast({
+              title: "🎉 5 Expenses Tracked!",
+              description: "You're building a great tracking habit!",
+              duration: 4000,
+            });
+          }, 500);
+        } else if (count === 10) {
+          setTimeout(() => {
+            toast({
+              title: "🔥 10 Expenses Tracked!",
+              description: "Amazing consistency! Keep it up!",
+              duration: 4000,
+            });
+          }, 500);
+        } else if (count === 25) {
+          setTimeout(() => {
+            toast({
+              title: "⭐ 25 Expenses Tracked!",
+              description: "You're a budgeting superstar!",
+              duration: 4000,
+            });
+          }, 500);
+        } else if (count === 50) {
+          setTimeout(() => {
+            const confetti = (window as any).confetti;
+            if (confetti) {
+              confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+              });
+            }
+            toast({
+              title: "🏆 50 Expenses Tracked!",
+              description: "Incredible milestone! You're a financial tracking champion!",
+              duration: 5000,
+            });
+          }, 500);
+        } else if (count % 100 === 0 && count > 0) {
+          setTimeout(() => {
+            const confetti = (window as any).confetti;
+            if (confetti) {
+              confetti({
+                particleCount: 150,
+                spread: 100,
+                origin: { y: 0.6 }
+              });
+            }
+            toast({
+              title: `🎊 ${count} Expenses!`,
+              description: "You're a true financial master!",
+              duration: 5000,
+            });
+          }, 500);
+        }
+        
+        return newExpenses;
+      });
       
       toast({
         title: "✅ Expense Added",
