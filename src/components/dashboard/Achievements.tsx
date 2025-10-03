@@ -156,18 +156,34 @@ export function Achievements() {
     }
   ];
 
-  // Sort achievements by category, then by points (descending), then by date (most recent first)
-  const earnedAchievements = achievements
+  // Deduplicate achievements by achievement_type (keep most recent), then sort
+  const uniqueAchievements = achievements
     .filter(a => a.achievement_type !== 'placeholder')
-    .sort((a, b) => {
-      // First sort by date (most recent first)
-      const dateA = new Date(a.earned_at).getTime();
-      const dateB = new Date(b.earned_at).getTime();
-      if (dateB !== dateA) return dateB - dateA;
-      
-      // Then by points (highest first)
-      return b.points - a.points;
-    });
+    .reduce((acc, achievement) => {
+      const existing = acc.find(a => a.achievement_type === achievement.achievement_type);
+      if (!existing) {
+        acc.push(achievement);
+      } else {
+        // Keep the most recent one
+        const existingDate = new Date(existing.earned_at).getTime();
+        const currentDate = new Date(achievement.earned_at).getTime();
+        if (currentDate > existingDate) {
+          const index = acc.indexOf(existing);
+          acc[index] = achievement;
+        }
+      }
+      return acc;
+    }, [] as typeof achievements);
+
+  const earnedAchievements = uniqueAchievements.sort((a, b) => {
+    // Sort by date (most recent first)
+    const dateA = new Date(a.earned_at).getTime();
+    const dateB = new Date(b.earned_at).getTime();
+    if (dateB !== dateA) return dateB - dateA;
+    
+    // Then by points (highest first)
+    return b.points - a.points;
+  });
   
   const totalPoints = earnedAchievements.reduce((sum, a) => sum + a.points, 0);
   

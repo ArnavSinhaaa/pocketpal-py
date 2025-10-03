@@ -49,11 +49,18 @@ export const useAchievements = () => {
   const awardAchievement = async (achievementType: string, title: string, description: string, points: number) => {
     if (!user) return;
 
-    // Check if already earned
-    const alreadyEarned = achievements.some(a => a.achievement_type === achievementType);
-    if (alreadyEarned) return;
-
     try {
+      // Check database directly for existing achievement to avoid duplicates
+      const { data: existing } = await supabase
+        .from('user_achievements')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('achievement_type', achievementType)
+        .single();
+
+      // If achievement already exists, skip
+      if (existing) return;
+
       const { data, error } = await supabase
         .from('user_achievements')
         .insert({
@@ -66,7 +73,11 @@ export const useAchievements = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // If error is due to duplicate, silently ignore
+        if (error.code === '23505') return;
+        throw error;
+      }
 
       // Update achievements state immediately
       setAchievements(prev => [data, ...prev]);
