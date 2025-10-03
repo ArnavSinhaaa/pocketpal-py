@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { FinBuddy } from "@/components/FinBuddy";
 
 const Index = () => {
   const { user, signOut } = useAuth();
@@ -25,6 +26,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <FinBuddy />
       {/* Header */}
       <div className="border-b bg-gradient-card shadow-card">
         <div className="max-w-7xl mx-auto px-4 py-6">
