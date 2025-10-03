@@ -23,6 +23,7 @@ export interface UserStats {
 export const useAchievements = () => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isChecking, setIsChecking] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -108,7 +109,9 @@ export const useAchievements = () => {
   };
 
   const checkAndAwardAchievements = useCallback(async (stats: UserStats) => {
-    if (!stats) return;
+    if (!stats || isChecking) return;
+    
+    setIsChecking(true);
 
     const achievementChecks = [
       // Expense tracking achievements
@@ -290,7 +293,9 @@ export const useAchievements = () => {
         await awardAchievement(check.type, check.title, check.description, check.points);
       }
     }
-  }, [achievements, user, awardAchievement]);
+    
+    setIsChecking(false);
+  }, [achievements, user, isChecking]);
 
   useEffect(() => {
     fetchAchievements();

@@ -13,13 +13,15 @@ export function Achievements() {
   const { achievements, loading: achievementsLoading, checkAndAwardAchievements } = useAchievements();
   const [recentAchievement, setRecentAchievement] = useState<any>(null);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [hasChecked, setHasChecked] = useState(false);
 
-  // Check for new achievements when stats change
+  // Check for new achievements only once when stats are loaded
   useEffect(() => {
-    if (stats && !statsLoading) {
+    if (stats && !statsLoading && !hasChecked) {
       checkAndAwardAchievements(stats);
+      setHasChecked(true);
     }
-  }, [stats, statsLoading, checkAndAwardAchievements]);
+  }, [stats, statsLoading, hasChecked]);
 
   // Show celebration animation for new achievements
   useEffect(() => {
@@ -154,8 +156,32 @@ export function Achievements() {
     }
   ];
 
-  const earnedAchievements = achievements.filter(a => a.achievement_type !== 'placeholder');
+  // Sort achievements by category, then by points (descending), then by date (most recent first)
+  const earnedAchievements = achievements
+    .filter(a => a.achievement_type !== 'placeholder')
+    .sort((a, b) => {
+      // First sort by date (most recent first)
+      const dateA = new Date(a.earned_at).getTime();
+      const dateB = new Date(b.earned_at).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      
+      // Then by points (highest first)
+      return b.points - a.points;
+    });
+  
   const totalPoints = earnedAchievements.reduce((sum, a) => sum + a.points, 0);
+  
+  // Group earned achievements by category
+  const groupedEarnedAchievements = earnedAchievements.reduce((acc, achievement) => {
+    const matchingCriteria = achievementCriteria.find(c => c.id === achievement.achievement_type);
+    const category = matchingCriteria?.category || 'milestone';
+    
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(achievement);
+    return acc;
+  }, {} as Record<string, typeof earnedAchievements>);
 
   return (
     <div className="space-y-6 relative">
@@ -312,7 +338,7 @@ export function Achievements() {
         </motion.div>
       </div>
 
-      {/* Earned Achievements */}
+      {/* Earned Achievements - Grouped by Category */}
       {earnedAchievements.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -327,48 +353,71 @@ export function Achievements() {
               </CardTitle>
               <CardDescription>Congratulations on your financial milestones!</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {earnedAchievements.map((achievement, index) => (
-                  <motion.div
-                    key={achievement.id}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 * index }}
-                    whileHover={{ scale: 1.05 }}
-                    className="relative"
-                  >
-                    <Card className="border-2 border-success bg-gradient-to-br from-success/5 to-success/10 hover:shadow-glow transition-all duration-300">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <motion.div
-                            animate={{ rotate: [0, 10, -10, 0] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            className="p-2 rounded-full bg-success/20"
-                          >
-                            <Trophy className="h-5 w-5 text-success" />
-                          </motion.div>
-                          <div className="flex-1">
-                            <h4 className="font-semibold">{achievement.title}</h4>
-                            <p className="text-sm text-muted-foreground mb-2">{achievement.description}</p>
-                            <Badge className="bg-success hover:bg-success/90">
-                              <Gift className="h-3 w-3 mr-1" />
-                              +{achievement.points} points
-                            </Badge>
-                          </div>
-                        </div>
+            <CardContent className="space-y-6">
+              {Object.entries(achievementCategories).map(([categoryKey, category]) => {
+                const categoryAchievements = groupedEarnedAchievements[categoryKey];
+                if (!categoryAchievements || categoryAchievements.length === 0) return null;
+
+                return (
+                  <div key={categoryKey}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className={`p-2 rounded-full ${category.bgColor}`}>
+                        <div className={`w-2 h-2 rounded-full ${category.color.replace('text-', 'bg-')}`} />
+                      </div>
+                      <h3 className={`font-semibold ${category.color}`}>
+                        {category.name} ({categoryAchievements.length})
+                      </h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {categoryAchievements.map((achievement, index) => (
                         <motion.div
-                          className="absolute top-2 right-2"
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 2, repeat: Infinity }}
+                          key={achievement.id}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.05 * index }}
+                          whileHover={{ scale: 1.05 }}
+                          className="relative"
                         >
-                          <Sparkles className="h-4 w-4 text-yellow-500" />
+                          <Card className="border-2 border-success bg-gradient-to-br from-success/5 to-success/10 hover:shadow-glow transition-all duration-300">
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-3">
+                                <motion.div
+                                  animate={{ rotate: [0, 10, -10, 0] }}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                  className="p-2 rounded-full bg-success/20"
+                                >
+                                  <Trophy className="h-5 w-5 text-success" />
+                                </motion.div>
+                                <div className="flex-1">
+                                  <h4 className="font-semibold">{achievement.title}</h4>
+                                  <p className="text-sm text-muted-foreground mb-2">{achievement.description}</p>
+                                  <div className="flex items-center justify-between">
+                                    <Badge className="bg-success hover:bg-success/90">
+                                      <Gift className="h-3 w-3 mr-1" />
+                                      +{achievement.points} points
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {new Date(achievement.earned_at).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <motion.div
+                                className="absolute top-2 right-2"
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                              >
+                                <Sparkles className="h-4 w-4 text-yellow-500" />
+                              </motion.div>
+                            </CardContent>
+                          </Card>
                         </motion.div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </motion.div>
