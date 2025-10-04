@@ -179,6 +179,7 @@ export type Database = {
           expenses_count: number
           goals_completed: number
           id: string
+          last_expense_date: string | null
           longest_streak: number
           total_points: number
           updated_at: string
@@ -189,6 +190,7 @@ export type Database = {
           expenses_count?: number
           goals_completed?: number
           id?: string
+          last_expense_date?: string | null
           longest_streak?: number
           total_points?: number
           updated_at?: string
@@ -199,6 +201,7 @@ export type Database = {
           expenses_count?: number
           goals_completed?: number
           id?: string
+          last_expense_date?: string | null
           longest_streak?: number
           total_points?: number
           updated_at?: string
