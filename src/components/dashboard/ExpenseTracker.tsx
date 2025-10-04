@@ -10,21 +10,11 @@ import { Separator } from "@/components/ui/separator";
 import { Trash2, Plus, TrendingUp, TrendingDown, AlertCircle, IndianRupee, Calculator, PieChart, Edit } from "lucide-react";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useProfile } from "@/hooks/useProfile";
+import { useExpenseCategories } from "@/hooks/useExpenseCategories";
 import { IncomeSection } from "./IncomeSection";
 import { ExpensePieChart } from "./ExpensePieChart";
+import { CategoryManager } from "./CategoryManager";
 
-const EXPENSE_CATEGORIES = [
-  { name: "Food & Dining", icon: "🍽️" },
-  { name: "Transportation", icon: "🚗" },
-  { name: "Entertainment", icon: "🎬" },
-  { name: "Healthcare", icon: "🏥" },
-  { name: "Shopping", icon: "🛍️" },
-  { name: "Utilities", icon: "⚡" },
-  { name: "Education", icon: "📚" },
-  { name: "Travel", icon: "✈️" },
-  { name: "Investment", icon: "💰" },
-  { name: "Other", icon: "📝" }
-];
 
 // Indian Tax Slabs for FY 2025-26
 const calculateIncomeTax = (annualIncome: number): number => {
@@ -49,7 +39,9 @@ export function ExpenseTracker() {
   
   const { expenses, loading, addExpense, removeExpense } = useExpenses();
   const { profile, loading: profileLoading, updateSalary } = useProfile();
+  const { getAllCategories, loading: categoriesLoading } = useExpenseCategories();
   
+  const allCategories = getAllCategories();
   const annualSalary = profile?.annual_salary || 0;
 
   const financialData = useMemo(() => {
@@ -116,11 +108,16 @@ export function ExpenseTracker() {
       {/* Quick Expense Entry */}
       <Card className="shadow-card border-0 bg-gradient-card">
         <CardHeader className="bg-gradient-primary/10 rounded-t-lg">
-          <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Add Expense
-          </CardTitle>
-          <CardDescription>Quick and easy expense tracking</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5" />
+                Add Expense
+              </CardTitle>
+              <CardDescription>Quick and easy expense tracking</CardDescription>
+            </div>
+            <CategoryManager />
+          </div>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -128,12 +125,15 @@ export function ExpenseTracker() {
               <SelectTrigger className="h-12">
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
-              <SelectContent>
-                {EXPENSE_CATEGORIES.map(cat => (
+              <SelectContent className="bg-popover z-50">
+                {allCategories.map((cat: any) => (
                   <SelectItem key={cat.name} value={cat.name}>
                     <div className="flex items-center gap-2">
                       <span>{cat.icon}</span>
                       <span>{cat.name}</span>
+                      {!cat.isDefault && (
+                        <Badge variant="secondary" className="text-xs ml-1">Custom</Badge>
+                      )}
                     </div>
                   </SelectItem>
                 ))}
@@ -166,7 +166,7 @@ export function ExpenseTracker() {
           
           {/* Quick Add Categories */}
           <div className="flex flex-wrap gap-2">
-            {EXPENSE_CATEGORIES.slice(0, 5).map(cat => (
+            {allCategories.slice(0, 5).map((cat: any) => (
               <Button
                 key={cat.name}
                 variant="ghost"
