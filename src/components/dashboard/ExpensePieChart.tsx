@@ -7,16 +7,14 @@ interface ExpensePieChartProps {
 }
 
 const COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
   'hsl(var(--primary))',
-  'hsl(var(--secondary))',
   'hsl(var(--accent))',
-  'hsl(var(--destructive))',
-  'hsl(var(--warning))',
-  'hsl(var(--success))',
-  'hsl(var(--muted))',
-  'hsl(var(--border))',
-  'hsl(var(--input))',
-  'hsl(var(--ring))'
+  'hsl(var(--success))'
 ];
 
 const toCurrency = (n: number) => new Intl.NumberFormat('en-IN', {
@@ -78,38 +76,43 @@ export function ExpensePieChart({ expenses }: ExpensePieChartProps) {
   };
 
   return (
-    <div className="w-full h-64">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={dataWithPercentage}
-            cx="50%"
-            cy="50%"
-            innerRadius={40}
-            outerRadius={80}
-            paddingAngle={2}
-            dataKey="value"
-          >
-            {dataWithPercentage.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip content={<CustomTooltip />} />
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="w-full">
+      <div className="h-72">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={dataWithPercentage}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={90}
+              paddingAngle={3}
+              dataKey="value"
+            >
+              {dataWithPercentage.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip content={<CustomTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
       
       {/* Legend */}
-      <div className="mt-4 space-y-1">
-        {dataWithPercentage.slice(0, 5).map((item, index) => (
-          <div key={item.name} className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
+      <div className="mt-6 grid grid-cols-1 gap-2">
+        {dataWithPercentage.map((item, index) => (
+          <div key={item.name} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               <div 
-                className="w-3 h-3 rounded-full" 
+                className="w-4 h-4 rounded-full flex-shrink-0" 
                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
               />
-              <span className="truncate">{item.name}</span>
+              <span className="text-sm font-medium truncate">{item.name}</span>
             </div>
-            <span className="text-muted-foreground">{item.percentage.toFixed(0)}%</span>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <span className="text-sm font-semibold">{toCurrency(item.value)}</span>
+              <span className="text-sm text-muted-foreground min-w-[3rem] text-right">{item.percentage.toFixed(1)}%</span>
+            </div>
           </div>
         ))}
       </div>
