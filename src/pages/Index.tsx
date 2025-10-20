@@ -32,12 +32,10 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center shadow-glow">
-                <Wallet className="h-5 w-5 text-white" />
-              </div>
+              <img src="/favicon.png" alt="FinMG Logo" className="w-10 h-10" />
               <div>
-                <h1 className="text-2xl font-bold">Personal Finance Manager</h1>
-                <p className="text-muted-foreground">Track expenses, manage budgets, and achieve your financial goals</p>
+                <h1 className="text-2xl font-bold">FinMG</h1>
+                <p className="text-muted-foreground">Your smart finance manager - Track, achieve, and level up! 🚀</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
