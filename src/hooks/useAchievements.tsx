@@ -98,14 +98,18 @@ export const useAchievements = () => {
           .eq('user_id', user.id);
       }
 
-      // Show celebration notification
-      const confetti = (window as any).confetti;
-      if (confetti) {
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.7 }
-        });
+      // Show celebration notification with confetti only for major achievements
+      const isMajorAchievement = points >= 100;
+      
+      if (isMajorAchievement) {
+        const confetti = (window as any).confetti;
+        if (confetti) {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
       }
       
       toast({
@@ -296,6 +300,72 @@ export const useAchievements = () => {
         title: '👑 VIP Legend',
         description: 'Earned 5000 points',
         points: 500
+      },
+      {
+        type: 'points_10000',
+        condition: stats.total_points >= 10000,
+        title: '💫 Ultimate Champion',
+        description: 'Earned 10000 points',
+        points: 1000
+      },
+      // Additional streak milestones
+      {
+        type: 'streak_150',
+        condition: stats.current_streak >= 150,
+        title: '🔥 Streak Master',
+        description: 'Maintained a 150-day streak',
+        points: 2500
+      },
+      {
+        type: 'streak_200',
+        condition: stats.current_streak >= 200,
+        title: '⚡ Unstoppable Force',
+        description: 'Maintained a 200-day streak',
+        points: 3500
+      },
+      {
+        type: 'streak_365',
+        condition: stats.current_streak >= 365,
+        title: '🌟 Year-Long Warrior',
+        description: 'Maintained a full year streak!',
+        points: 5000
+      },
+      // Additional expense tracking milestones
+      {
+        type: 'expense_1000',
+        condition: stats.expenses_count >= 1000,
+        title: '🏆 Tracking Titan',
+        description: 'Tracked 1000 expenses',
+        points: 2000
+      },
+      {
+        type: 'expense_2500',
+        condition: stats.expenses_count >= 2500,
+        title: '💎 Financial Guru',
+        description: 'Tracked 2500 expenses',
+        points: 5000
+      },
+      // Additional goal achievements
+      {
+        type: 'goal_achiever_30',
+        condition: stats.goals_completed >= 30,
+        title: '🎯 Goal Master Supreme',
+        description: 'Completed 30 financial goals',
+        points: 1500
+      },
+      {
+        type: 'goal_achiever_50',
+        condition: stats.goals_completed >= 50,
+        title: '🌟 Dream Achiever',
+        description: 'Completed 50 financial goals',
+        points: 3000
+      },
+      {
+        type: 'goal_achiever_100',
+        condition: stats.goals_completed >= 100,
+        title: '👑 Goal Legend',
+        description: 'Completed 100 financial goals',
+        points: 7500
       }
     ];
 

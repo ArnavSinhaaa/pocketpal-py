@@ -17,6 +17,7 @@ export interface UserStats {
 export const useUserStats = () => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [celebratedMilestones, setCelebratedMilestones] = useState<Set<string>>(new Set());
   const { user } = useAuth();
 
   const fetchStats = async () => {
@@ -63,103 +64,58 @@ export const useUserStats = () => {
               const newStats = payload.new as UserStats;
               const oldStats = stats;
               
-              // Check for streak milestones
+              // Check for streak milestones (only once per milestone)
               if (oldStats && newStats.current_streak > oldStats.current_streak) {
                 const streak = newStats.current_streak;
+                const milestoneKey = `streak_${streak}`;
                 
-                if (streak === 3) {
-                  toast({
-                    title: "🔥 3-Day Streak!",
-                    description: "You're building momentum!",
-                    duration: 3000,
-                  });
-                } else if (streak === 7) {
-                  toast({
-                    title: "🌟 7-Day Streak!",
-                    description: "One week of consistent tracking!",
-                    duration: 4000,
-                  });
-                } else if (streak === 14) {
-                  toast({
-                    title: "💎 2-Week Streak!",
-                    description: "You're unstoppable!",
-                    duration: 4000,
-                  });
-                } else if (streak === 30) {
-                  const confetti = (window as any).confetti;
-                  if (confetti) {
-                    confetti({
-                      particleCount: 100,
-                      spread: 70,
-                      origin: { y: 0.6 }
+                if (!celebratedMilestones.has(milestoneKey)) {
+                  if (streak === 3) {
+                    setCelebratedMilestones(prev => new Set(prev).add(milestoneKey));
+                    toast({
+                      title: "🔥 3-Day Streak!",
+                      description: "You're building momentum!",
+                      duration: 3000,
+                    });
+                  } else if (streak === 7) {
+                    setCelebratedMilestones(prev => new Set(prev).add(milestoneKey));
+                    toast({
+                      title: "🌟 7-Day Streak!",
+                      description: "One week of consistent tracking!",
+                      duration: 4000,
+                    });
+                  } else if (streak === 14) {
+                    setCelebratedMilestones(prev => new Set(prev).add(milestoneKey));
+                    toast({
+                      title: "💎 2-Week Streak!",
+                      description: "You're unstoppable!",
+                      duration: 4000,
                     });
                   }
-                  toast({
-                    title: "🏆 30-Day Streak!",
-                    description: "Incredible! You've built a habit!",
-                    duration: 5000,
-                  });
-                } else if (streak === 60) {
-                  const confetti = (window as any).confetti;
-                  if (confetti) {
-                    confetti({
-                      particleCount: 150,
-                      spread: 100,
-                      origin: { y: 0.6 }
-                    });
-                  }
-                  toast({
-                    title: "🎊 60-Day Streak!",
-                    description: "You're a financial tracking legend!",
-                    duration: 5000,
-                  });
-                } else if (streak % 100 === 0) {
-                  const confetti = (window as any).confetti;
-                  if (confetti) {
-                    confetti({
-                      particleCount: 200,
-                      spread: 120,
-                      origin: { y: 0.6 }
-                    });
-                  }
-                  toast({
-                    title: `🌈 ${streak}-Day Streak!`,
-                    description: "You've reached legendary status!",
-                    duration: 6000,
-                  });
                 }
               }
               
-              // Check for goals completed milestone
+              // Check for goals completed milestone (only once per milestone)
               if (oldStats && newStats.goals_completed > oldStats.goals_completed) {
                 const goalsCompleted = newStats.goals_completed;
+                const milestoneKey = `goal_${goalsCompleted}`;
                 
-                if (goalsCompleted === 1) {
-                  toast({
-                    title: "🎯 First Goal Completed!",
-                    description: "This is just the beginning!",
-                    duration: 4000,
-                  });
-                } else if (goalsCompleted === 5) {
-                  toast({
-                    title: "🌟 5 Goals Completed!",
-                    description: "You're making great progress!",
-                    duration: 4000,
-                  });
-                } else if (goalsCompleted === 10) {
-                  const confetti = (window as any).confetti;
-                  if (confetti) {
-                    confetti({
-                      particleCount: 100,
-                      spread: 70,
-                      origin: { y: 0.6 }
+                if (!celebratedMilestones.has(milestoneKey)) {
+                  if (goalsCompleted === 1) {
+                    setCelebratedMilestones(prev => new Set(prev).add(milestoneKey));
+                    toast({
+                      title: "🎯 First Goal Completed!",
+                      description: "This is just the beginning!",
+                      duration: 4000,
+                    });
+                  } else if (goalsCompleted === 5) {
+                    setCelebratedMilestones(prev => new Set(prev).add(milestoneKey));
+                    toast({
+                      title: "🌟 5 Goals Completed!",
+                      description: "You're making great progress!",
+                      duration: 4000,
                     });
                   }
-                  toast({
-                    title: "🏆 10 Goals Completed!",
-                    description: "You're a goal-crushing champion!",
-                    duration: 5000,
-                  });
                 }
               }
               
