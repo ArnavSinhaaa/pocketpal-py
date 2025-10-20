@@ -32,7 +32,6 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src="/favicon.png" alt="FinMG Logo" className="w-10 h-10" />
               <div>
                 <h1 className="text-2xl font-bold">FinMG</h1>
                 <p className="text-muted-foreground">Your smart finance manager - Track, achieve, and level up! 🚀</p>
