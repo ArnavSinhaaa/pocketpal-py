@@ -12,6 +12,8 @@ import { useExpenses } from "@/hooks/useExpenses";
 import { useProfile } from "@/hooks/useProfile";
 import { useExpenseCategories } from "@/hooks/useExpenseCategories";
 import { IncomeSection } from "./IncomeSection";
+import { IndirectIncomeSection } from "./IndirectIncomeSection";
+import { TaxBreakdownSection } from "./TaxBreakdownSection";
 import { ExpensePieChart } from "./ExpensePieChart";
 import { CategoryManager } from "./CategoryManager";
 
@@ -36,6 +38,7 @@ export function ExpenseTracker() {
   const [expenseCategory, setExpenseCategory] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [indirectIncomeTotal, setIndirectIncomeTotal] = useState(0);
   
   const { expenses, loading, addExpense, removeExpense } = useExpenses();
   const { profile, loading: profileLoading, updateSalary } = useProfile();
@@ -46,8 +49,9 @@ export function ExpenseTracker() {
 
   const financialData = useMemo(() => {
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const estimatedTax = calculateIncomeTax(annualSalary);
-    const netAnnualIncome = annualSalary - estimatedTax;
+    const totalTaxableIncome = annualSalary + indirectIncomeTotal;
+    const estimatedTax = calculateIncomeTax(totalTaxableIncome);
+    const netAnnualIncome = totalTaxableIncome - estimatedTax;
     const monthlyNetIncome = netAnnualIncome / 12;
     const netSavings = monthlyNetIncome - totalExpenses;
     const savingsPercentage = monthlyNetIncome > 0 ? (netSavings / monthlyNetIncome) * 100 : 0;
@@ -59,9 +63,9 @@ export function ExpenseTracker() {
       monthlyNetIncome,
       estimatedTax,
       netAnnualIncome,
-      taxableIncome: annualSalary
+      taxableIncome: totalTaxableIncome
     };
-  }, [expenses, annualSalary]);
+  }, [expenses, annualSalary, indirectIncomeTotal]);
 
   const handleAddExpense = async () => {
     if (!expenseCategory || !amount || parseFloat(amount) <= 0) return;
@@ -103,6 +107,15 @@ export function ExpenseTracker() {
         onSalaryChange={updateSalary}
         estimatedTax={financialData.estimatedTax}
         netAnnualIncome={financialData.netAnnualIncome}
+      />
+
+      {/* Indirect Income Section */}
+      <IndirectIncomeSection onTotalChange={setIndirectIncomeTotal} />
+
+      {/* Tax Breakdown Section */}
+      <TaxBreakdownSection 
+        salaryIncome={annualSalary}
+        indirectIncome={indirectIncomeTotal}
       />
 
       {/* Quick Expense Entry */}
