@@ -37,9 +37,10 @@ interface TaxBreakdownSectionProps {
 export function TaxBreakdownSection({ salaryIncome, indirectIncome }: TaxBreakdownSectionProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const calculateTaxForIncome = (income: number): number => {
+  // Calculate progressive tax on total income (correct approach)
+  const calculateProgressiveTax = (totalIncome: number): number => {
     let tax = 0;
-    let remainingIncome = income;
+    let remainingIncome = totalIncome;
 
     for (const slab of taxSlabs) {
       if (remainingIncome <= 0) break;
@@ -56,10 +57,14 @@ export function TaxBreakdownSection({ salaryIncome, indirectIncome }: TaxBreakdo
     return tax;
   };
 
-  const taxOnSalary = calculateTaxForIncome(salaryIncome);
-  const taxOnIndirect = calculateTaxForIncome(indirectIncome);
+  // Calculate proportional tax attribution (for display purposes only)
   const totalTaxableIncome = salaryIncome + indirectIncome;
-  const totalTax = taxOnSalary + taxOnIndirect;
+  const totalTax = calculateProgressiveTax(totalTaxableIncome);
+  
+  // Proportionally attribute tax to each income source for display
+  const taxOnSalary = totalTaxableIncome > 0 ? (salaryIncome / totalTaxableIncome) * totalTax : 0;
+  const taxOnIndirect = totalTaxableIncome > 0 ? (indirectIncome / totalTaxableIncome) * totalTax : 0;
+  
   const netAnnualIncome = totalTaxableIncome - totalTax;
 
   const getApplicableSlab = (income: number): string => {
@@ -177,9 +182,13 @@ export function TaxBreakdownSection({ salaryIncome, indirectIncome }: TaxBreakdo
                   </TableBody>
                 </Table>
               </div>
-              <p className="text-xs text-muted-foreground">
-                💡 Calculations based on the new tax regime without any deductions under Section 80C, 80D, etc.
-              </p>
+              <div className="flex items-start gap-2 text-xs text-muted-foreground p-3 bg-muted/20 rounded border border-border/30">
+                <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium mb-1">Tax Calculation Method:</p>
+                  <p>Progressive tax is calculated on total taxable income (salary + indirect income combined). The "Tax on Salary" and "Tax on Indirect Income" shown above are proportional attributions for reference only.</p>
+                </div>
+              </div>
             </div>
 
             {/* Income Type Tax Rates Guide */}
