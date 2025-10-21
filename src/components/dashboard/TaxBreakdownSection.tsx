@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Calculator, ChevronDown } from "lucide-react";
+import { Calculator, ChevronDown, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 const toCurrency = (n: number) => new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -179,6 +180,52 @@ export function TaxBreakdownSection({ salaryIncome, indirectIncome }: TaxBreakdo
               <p className="text-xs text-muted-foreground">
                 💡 Calculations based on the new tax regime without any deductions under Section 80C, 80D, etc.
               </p>
+            </div>
+
+            {/* Income Type Tax Rates Guide */}
+            <div className="space-y-3 p-4 border border-border/50 rounded-lg bg-muted/10">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                Tax Rates by Income Category
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Interest, Dividends, Freelance:</span>
+                    <Badge variant="outline" className="text-xs">Slab Rate</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">STCG - Equity:</span>
+                    <Badge variant="outline" className="text-xs">15% Flat</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">LTCG - Equity (above ₹1L):</span>
+                    <Badge variant="outline" className="text-xs">10%</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">STCG/LTCG - Other Assets:</span>
+                    <Badge variant="outline" className="text-xs">20%</Badge>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Rental Income:</span>
+                    <Badge variant="outline" className="text-xs">30% Deduction</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Winnings/Lottery:</span>
+                    <Badge variant="outline" className="text-xs">30% TDS</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Agricultural Income:</span>
+                    <Badge variant="outline" className="text-xs bg-success/20">Tax Exempt</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Gift (above ₹50k):</span>
+                    <Badge variant="outline" className="text-xs">Slab Rate</Badge>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </CollapsibleContent>

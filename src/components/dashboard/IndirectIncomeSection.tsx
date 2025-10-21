@@ -15,11 +15,20 @@ const toCurrency = (n: number) => new Intl.NumberFormat('en-IN', {
 }).format(n);
 
 const incomeTypes = [
-  "Interest",
-  "Dividends",
-  "Freelance",
-  "Rent",
-  "Capital Gains",
+  "Interest Income",
+  "Dividend Income",
+  "Freelance/Consulting",
+  "Rental Income",
+  "Short-term Capital Gains (STCG) - Equity",
+  "Long-term Capital Gains (LTCG) - Equity",
+  "STCG - Other Assets",
+  "LTCG - Other Assets",
+  "Business Income",
+  "Commission Income",
+  "Royalty Income",
+  "Agricultural Income",
+  "Winnings/Lottery",
+  "Gift Income",
   "Others"
 ];
 
@@ -51,11 +60,40 @@ export function IndirectIncomeSection({ onTotalChange }: IndirectIncomeSectionPr
     }
   };
 
+  // Calculate tax based on income type
+  const calculateTaxByType = (incomeType: string, amount: number): number => {
+    switch (incomeType) {
+      case "Short-term Capital Gains (STCG) - Equity":
+        return amount * 0.15; // 15% flat
+      case "Long-term Capital Gains (LTCG) - Equity":
+        return Math.max(0, amount - 100000) * 0.10; // 10% above ₹1L
+      case "STCG - Other Assets":
+        return amount * 0.20; // Slab rate (simplified to 20%)
+      case "LTCG - Other Assets":
+        return amount * 0.20; // 20% with indexation benefit
+      case "Rental Income":
+        return (amount * 0.70) * 0.30; // 30% standard deduction, then 30% tax
+      case "Winnings/Lottery":
+        return amount * 0.30; // 30% flat (TDS)
+      case "Agricultural Income":
+        return 0; // Tax-exempt
+      case "Gift Income":
+        return amount > 50000 ? (amount - 50000) * 0.30 : 0; // Exempt up to ₹50k
+      default:
+        // Interest, Dividends, Freelance, Business, Commission, Royalty, Others
+        return amount * 0.30; // Simplified slab rate
+    }
+  };
+
   const totalIndirectIncome = sources.reduce((sum, source) => {
     return sum + calculateAnnualAmount(Number(source.amount), source.frequency);
   }, 0);
 
-  const estimatedTax = totalIndirectIncome * 0.30; // Simplified 30% tax
+  const estimatedTax = sources.reduce((sum, source) => {
+    const annualAmount = calculateAnnualAmount(Number(source.amount), source.frequency);
+    return sum + calculateTaxByType(source.income_type, annualAmount);
+  }, 0);
+
   const netIndirectIncome = totalIndirectIncome - estimatedTax;
 
   // Notify parent component of total change
@@ -105,14 +143,17 @@ export function IndirectIncomeSection({ onTotalChange }: IndirectIncomeSectionPr
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Total Indirect Income</p>
                 <p className="text-2xl font-bold text-primary">{toCurrency(totalIndirectIncome)}</p>
+                <p className="text-xs text-muted-foreground">{sources.length} source(s)</p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Estimated Tax (30%)</p>
+                <p className="text-sm font-medium text-muted-foreground">Estimated Tax</p>
                 <p className="text-2xl font-bold text-destructive">{toCurrency(estimatedTax)}</p>
+                <p className="text-xs text-muted-foreground">Category-based rates</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Net Indirect Income</p>
                 <p className="text-2xl font-bold text-success">{toCurrency(netIndirectIncome)}</p>
+                <p className="text-xs text-muted-foreground">After tax deduction</p>
               </div>
             </div>
 
@@ -166,37 +207,46 @@ export function IndirectIncomeSection({ onTotalChange }: IndirectIncomeSectionPr
             {sources.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold">Your Income Sources</h3>
-                {sources.map((source) => (
-                  <div
-                    key={source.id}
-                    className="flex items-center justify-between p-4 border border-border/50 rounded-lg bg-background/30 hover:bg-background/50 transition-colors"
-                  >
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Type</p>
-                        <p className="font-medium">{source.income_type}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Amount</p>
-                        <p className="font-medium">{toCurrency(Number(source.amount))} / {source.frequency}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Annual Value</p>
-                        <p className="font-medium text-primary">
-                          {toCurrency(calculateAnnualAmount(Number(source.amount), source.frequency))}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteSource(source.id, Number(source.amount), source.frequency)}
-                      className="ml-4 text-destructive hover:text-destructive hover:bg-destructive/10"
+                {sources.map((source) => {
+                  const annualAmount = calculateAnnualAmount(Number(source.amount), source.frequency);
+                  const taxOnThis = calculateTaxByType(source.income_type, annualAmount);
+                  const netAmount = annualAmount - taxOnThis;
+
+                  return (
+                    <div
+                      key={source.id}
+                      className="flex items-center justify-between p-4 border border-border/50 rounded-lg bg-background/30 hover:bg-background/50 transition-colors"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Type</p>
+                          <p className="font-medium text-sm">{source.income_type}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Amount</p>
+                          <p className="font-medium">{toCurrency(Number(source.amount))} / {source.frequency}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Annual / Tax</p>
+                          <p className="font-medium text-primary">{toCurrency(annualAmount)}</p>
+                          <p className="text-xs text-destructive">Tax: {toCurrency(taxOnThis)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Net Annual</p>
+                          <p className="font-medium text-success">{toCurrency(netAmount)}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteSource(source.id, Number(source.amount), source.frequency)}
+                        className="ml-4 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
