@@ -55,6 +55,7 @@ export function ExpenseTracker() {
     const monthlyNetIncome = netAnnualIncome / 12;
     const netSavings = monthlyNetIncome - totalExpenses;
     const savingsPercentage = monthlyNetIncome > 0 ? (netSavings / monthlyNetIncome) * 100 : 0;
+    const annualSavings = netSavings * 12;
     
     return { 
       totalExpenses, 
@@ -63,7 +64,8 @@ export function ExpenseTracker() {
       monthlyNetIncome,
       estimatedTax,
       netAnnualIncome,
-      taxableIncome: totalTaxableIncome
+      taxableIncome: totalTaxableIncome,
+      annualSavings
     };
   }, [expenses, annualSalary, indirectIncomeTotal]);
 
@@ -199,6 +201,28 @@ export function ExpenseTracker() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Financial Cards */}
         <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="shadow-card border-primary/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Annual Income</p>
+                  <p className="text-2xl font-bold text-primary">{toCurrency(financialData.taxableIncome)}</p>
+                  <div className="flex gap-2 mt-1">
+                    <Badge variant="outline" className="text-xs">
+                      Salary: {toCurrency(annualSalary)}
+                    </Badge>
+                    {indirectIncomeTotal > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        Side: {toCurrency(indirectIncomeTotal)}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <Calculator className="h-8 w-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="shadow-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -236,6 +260,21 @@ export function ExpenseTracker() {
                   <p className="text-xs text-muted-foreground">Monthly remainder</p>
                 </div>
                 <TrendingDown className={`h-8 w-8 ${financialData.netSavings >= 0 ? 'text-success' : 'text-destructive'}`} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card border-success/20 bg-success/5">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Annual Savings</p>
+                  <p className={`text-2xl font-bold ${financialData.annualSavings >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {annualSalary > 0 ? toCurrency(financialData.annualSavings) : "Set salary first"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Projected yearly</p>
+                </div>
+                <TrendingUp className={`h-8 w-8 ${financialData.annualSavings >= 0 ? 'text-success' : 'text-destructive'}`} />
               </div>
             </CardContent>
           </Card>
