@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FinBuddy } from "@/components/FinBuddy";
+import { DonationSection } from "@/components/DonationSection";
+import { Footer } from "@/components/Footer";
 
 const Index = () => {
   const { user, signOut } = useAuth();
@@ -141,7 +143,15 @@ const Index = () => {
             <Achievements />
           </TabsContent>
         </Tabs>
+
+        {/* Donation Section */}
+        <div className="mt-12">
+          <DonationSection />
+        </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };
