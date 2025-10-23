@@ -6,7 +6,8 @@ import { GoalsTracker } from "@/components/dashboard/GoalsTracker";
 import { BillReminders } from "@/components/dashboard/BillReminders";
 import { Achievements } from "@/components/dashboard/Achievements";
 import { useAuth } from "@/contexts/AuthContext";
-import { Wallet, Target, Bell, Trophy, TrendingUp, LogOut, User } from "lucide-react";
+import { Wallet, Target, Bell, Trophy, TrendingUp, LogOut, User, Lightbulb, Bot } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FinBuddy } from "@/components/FinBuddy";
 import { DonationSection } from "@/components/DonationSection";
 import { Footer } from "@/components/Footer";
+import { IncomeForecast } from "@/components/insights/IncomeForecast";
+import { SpendingInsights } from "@/components/insights/SpendingInsights";
 
 const Index = () => {
   const { user, signOut } = useAuth();
@@ -72,13 +75,20 @@ const Index = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <Tabs defaultValue="expenses" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-muted/50 p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:grid-cols-5 bg-muted/50 p-1 rounded-lg">
             <TabsTrigger 
               value="expenses" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <TrendingUp className="h-4 w-4" />
               <span className="hidden sm:inline">Expenses</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="insights" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+            >
+              <Lightbulb className="h-4 w-4" />
+              <span className="hidden sm:inline">AI Insights</span>
             </TabsTrigger>
             <TabsTrigger 
               value="goals" 
@@ -111,6 +121,60 @@ const Index = () => {
               </div>
             </div>
             <ExpenseTracker />
+          </TabsContent>
+
+          <TabsContent value="insights" className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">AI-Powered Insights</h2>
+                <p className="text-muted-foreground">Get intelligent forecasts and personalized savings recommendations</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <IncomeForecast />
+              <SpendingInsights />
+            </div>
+            <Card className="bg-gradient-card border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-primary" />
+                  Tax Planner Assistant
+                </CardTitle>
+                <CardDescription>
+                  Ask FinBuddy about tax slabs, deductions, and how they impact your income
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3">
+                  FinBuddy can now explain your tax situation in plain language! Try asking:
+                </p>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    <span>"Explain my tax slabs based on my income"</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    <span>"How much tax do I pay in each slab?"</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    <span>"What deductions can lower my tax?"</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    <span>"Should I choose old or new tax regime?"</span>
+                  </li>
+                </ul>
+                <Button 
+                  onClick={() => document.querySelector<HTMLElement>('[data-finbuddy-button]')?.click()}
+                  className="mt-4 w-full"
+                  variant="outline"
+                >
+                  Open Tax Planner Chat
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="goals" className="space-y-6 animate-fade-in">

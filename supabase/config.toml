@@ -1,1 +1,10 @@
 project_id = "tbsgqvrfoljyjciflosl"
+
+[functions.finbuddy-chat]
+verify_jwt = true
+
+[functions.income-forecast]
+verify_jwt = true
+
+[functions.spending-insights]
+verify_jwt = true
