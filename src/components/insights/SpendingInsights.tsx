@@ -55,8 +55,16 @@ export function SpendingInsights() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch insights');
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 429) {
+          toast({ title: 'AI rate limit', description: 'Too many requests. Please try again shortly.', variant: 'destructive' });
+          throw new Error('Rate limit exceeded');
+        }
+        if (response.status === 402) {
+          toast({ title: 'AI credits required', description: 'Please add credits to continue using AI features.', variant: 'destructive' });
+          throw new Error('Payment required');
+        }
+        throw new Error((errorData as any).error || 'Failed to fetch insights');
       }
 
       const data = await response.json();

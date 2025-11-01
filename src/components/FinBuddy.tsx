@@ -67,7 +67,16 @@ export function FinBuddy() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData: any = {};
+        try { errorData = await response.json(); } catch {}
+        if (response.status === 429) {
+          toast({ title: 'AI rate limit', description: 'Too many requests. Please wait and try again.', variant: 'destructive' });
+          throw new Error('Rate limit exceeded');
+        }
+        if (response.status === 402) {
+          toast({ title: 'AI credits required', description: 'Please add credits to continue using FinBuddy.', variant: 'destructive' });
+          throw new Error('Payment required');
+        }
         throw new Error(errorData.error || 'Failed to get response');
       }
 
