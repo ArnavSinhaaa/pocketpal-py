@@ -134,6 +134,9 @@ Please provide a forecast using regression on the expense trends and suggest way
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Groq API error:', response.status, errorText);
+      
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
           status: 429,
@@ -146,7 +149,14 @@ Please provide a forecast using regression on the expense trends and suggest way
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      throw new Error('AI service error');
+      return new Response(JSON.stringify({ 
+        error: 'AI service error', 
+        details: errorText,
+        status: response.status 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
