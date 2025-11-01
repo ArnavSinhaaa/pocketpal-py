@@ -59,7 +59,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const origin = window.location.origin;
+    const PRODUCTION_URL = 'https://b7170cfe-6155-4b48-b9cc-caf5825ff9c3.lovableproject.com';
+    const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
+    const redirectUrl = `${isLocal ? PRODUCTION_URL : origin}/`;
     
     const { error } = await supabase.auth.signUp({
       email,
