@@ -1,21 +1,72 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+/**
+ * ========================================
+ * FINBUDDY CHAT - AI Financial Assistant Edge Function
+ * ========================================
+ * 
+ * This Supabase Edge Function powers the FinBuddy chat interface.
+ * It fetches user financial data and uses AI to provide personalized advice.
+ * 
+ * KEY FEATURES:
+ * - Real-time streaming responses
+ * - Context-aware (uses user's actual financial data)
+ * - Indian financial planning focused
+ * - Tax slab explanation capability
+ * 
+ * TECH STACK:
+ * - Deno runtime (serverless)
+ * - Lovable AI Gateway (Gemini 2.5 Flash)
+ * - Supabase client for data fetching
+ * 
+ * CODING TIP: Edge functions are perfect for:
+ * - API integrations with secrets
+ * - Complex business logic
+ * - AI/LLM interactions
+ * Keep client-side code simple, put heavy logic here!
+ */
+
+import "https://deno.land/x/xhr@0.1.0/mod.ts"; // Required for fetch in Deno
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
+/**
+ * CORS Headers - Required for browser requests
+ * 
+ * CODING TIP: Always set CORS headers for edge functions called from web apps!
+ * Without these, browsers will block the requests.
+ */
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/**
+ * Main request handler
+ * 
+ * FLOW:
+ * 1. Handle CORS preflight
+ * 2. Authenticate user
+ * 3. Fetch user's financial data
+ * 4. Build context for AI
+ * 5. Call AI Gateway (streaming)
+ * 6. Return stream to client
+ */
 serve(async (req) => {
+  /**
+   * Handle CORS Preflight Requests
+   * 
+   * CODING TIP: Browsers send OPTIONS requests before actual requests.
+   * Always handle these first!
+   */
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Parse request body
     const { messages } = await req.json();
     const authHeader = req.headers.get('Authorization');
     
+    // Validate authentication
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'No authorization header' }), {
         status: 401,
@@ -23,14 +74,19 @@ serve(async (req) => {
       });
     }
 
-    // Initialize Supabase client
+    /**
+     * Initialize Supabase client with user's auth token
+     * 
+     * CODING TIP: Pass the Authorization header to ensure all queries
+     * respect Row Level Security (RLS) policies.
+     */
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Get user from auth
+    // Verify user authentication
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -39,7 +95,18 @@ serve(async (req) => {
       });
     }
 
-    // Fetch user's financial data
+    /**
+     * Fetch all user's financial data in parallel
+     * 
+     * CODING TIP: Use Promise.all() to fetch multiple things simultaneously!
+     * This is much faster than sequential fetches.
+     * 
+     * WHAT WE FETCH:
+     * - Recent expenses (last 20)
+     * - Financial goals
+     * - User stats (streak, achievements)
+     * - Profile (salary information)
+     */
     const [expensesRes, goalsRes, statsRes, profileRes] = await Promise.all([
       supabase.from('expenses').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(20),
       supabase.from('financial_goals').select('*').eq('user_id', user.id),
@@ -81,11 +148,32 @@ Indian Financial Context:
 - Popular investment options: ELSS, PPF, EPF, NPS, Mutual Funds, Fixed Deposits
 `;
 
+    /**
+     * Get Lovable AI API Key
+     * 
+     * CODING TIP: Always validate environment variables early!
+     * This prevents cryptic errors later.
+     * 
+     * EDIT NOTE: LOVABLE_API_KEY is auto-configured by Lovable.
+     * You don't need to set it manually.
+     */
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    /**
+     * Call Lovable AI Gateway with streaming enabled
+     * 
+     * MODEL: google/gemini-2.5-flash
+     * - Fast responses
+     * - Good balance of quality and speed
+     * - Cost-effective for chat
+     * 
+     * EDIT THIS to change AI model:
+     * - google/gemini-2.5-pro (higher quality, slower)
+     * - google/gemini-2.5-flash-lite (fastest, lower quality)
+     */
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -97,6 +185,12 @@ Indian Financial Context:
         messages: [
           {
             role: 'system',
+            /**
+             * SYSTEM PROMPT - This is the AI's "personality" and knowledge base
+             * 
+             * EDIT THIS to change FinBuddy's behavior, expertise, or tone.
+             * Keep it specific and actionable!
+             */
             content: `You are FinBuddy, a friendly and supportive personal finance assistant specialized in Indian financial planning. You help users track expenses, manage budgets, save taxes, and achieve their financial goals in the Indian context.
 
 Your personality:
@@ -165,22 +259,35 @@ ${contextMessage}`
       }),
     });
 
+    /**
+     * Error Handling for AI Gateway
+     * 
+     * IMPORTANT: Always handle these specific status codes:
+     * - 429: Rate limit (too many requests)
+     * - 402: Payment required (out of credits)
+     * - 500: Service error
+     */
     if (!response.ok) {
       const errorText = await response.text();
       console.error('AI gateway error:', response.status, errorText);
       
+      // Rate limiting
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      
+      // Out of credits
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: 'AI service requires payment. Please contact support.' }), {
           status: 402,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      
+      // Other errors
       return new Response(JSON.stringify({ 
         error: 'AI service error', 
         details: errorText,
@@ -191,10 +298,22 @@ ${contextMessage}`
       });
     }
 
+    /**
+     * Return streaming response to client
+     * 
+     * CODING TIP: text/event-stream enables real-time token streaming.
+     * The client receives text as it's generated, not all at once!
+     */
     return new Response(response.body, {
       headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
     });
   } catch (error) {
+    /**
+     * Global error handler
+     * 
+     * CODING TIP: Always log errors for debugging!
+     * Check edge function logs when things go wrong.
+     */
     console.error('FinBuddy chat error:', error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
@@ -202,3 +321,20 @@ ${contextMessage}`
     });
   }
 });
+
+/**
+ * ========================================
+ * DEBUGGING TIPS
+ * ========================================
+ * 
+ * 1. Check Logs: View edge function logs in Supabase dashboard
+ * 2. Test Locally: Use Supabase CLI to test functions locally
+ * 3. Monitor Credits: Check AI usage in Lovable settings
+ * 4. Rate Limits: Add delays if hitting rate limits
+ * 
+ * COMMON ISSUES:
+ * - "No authorization header": Client not sending auth token
+ * - 429 errors: Too many requests, add rate limiting
+ * - 402 errors: Out of AI credits, top up in Lovable
+ * - Slow responses: Consider caching or using lite model
+ */

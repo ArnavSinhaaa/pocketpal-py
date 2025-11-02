@@ -1,23 +1,62 @@
+/**
+ * ========================================
+ * USE EXPENSES HOOK - Expense Data Management
+ * ========================================
+ * 
+ * Custom hook for managing expense data with real-time updates.
+ * Handles CRUD operations and gamification (milestones, confetti).
+ * 
+ * USAGE:
+ * const { expenses, addExpense, removeExpense, loading } = useExpenses();
+ * 
+ * CODING TIP: Custom hooks are perfect for encapsulating complex logic that
+ * multiple components need. Keep your components clean by moving data logic here!
+ */
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+/**
+ * Expense data structure
+ * 
+ * CODING TIP: Always define TypeScript interfaces for your data.
+ * This prevents bugs and gives you autocomplete!
+ */
 export interface Expense {
   id: string;
   category: string;
   amount: number;
-  description?: string;
+  description?: string;  // Optional field
   date: string;
   created_at: string;
 }
 
+/**
+ * Main useExpenses hook
+ * 
+ * @returns Expense data, loading state, and CRUD methods
+ * 
+ * ARCHITECTURE NOTE: This hook combines:
+ * 1. Local state management (useState)
+ * 2. Server communication (Supabase)
+ * 3. Real-time updates (Supabase subscriptions)
+ * 4. User feedback (toasts)
+ * 5. Gamification (milestone celebrations)
+ */
 export const useExpenses = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
 
+  /**
+   * Fetch all expenses for the current user from Supabase
+   * 
+   * CODING TIP: Always check if user exists before making authenticated requests.
+   * This prevents errors when the component mounts before auth is ready.
+   */
   const fetchExpenses = async () => {
     if (!user) return;
 
@@ -25,8 +64,8 @@ export const useExpenses = () => {
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false });
+        .eq('user_id', user.id)          // Only get current user's expenses
+        .order('date', { ascending: false }); // Newest first
 
       if (error) throw error;
       setExpenses(data || []);
@@ -42,6 +81,21 @@ export const useExpenses = () => {
     }
   };
 
+  /**
+   * Add a new expense to the database
+   * 
+   * @param expenseData - Expense information (category, amount, etc.)
+   * @returns Success/error object
+   * 
+   * FEATURES:
+   * - Immediate UI update (optimistic)
+   * - Milestone detection (5, 10, 25, 50, 100+ expenses)
+   * - Confetti celebration at major milestones
+   * - Toast notifications
+   * 
+   * CODING TIP: Return success/error objects instead of throwing errors.
+   * This gives the caller control over error handling.
+   */
   const addExpense = async (expenseData: {
     category: string;
     amount: number;
@@ -58,19 +112,24 @@ export const useExpenses = () => {
           category: expenseData.category,
           amount: expenseData.amount,
           description: expenseData.description,
-          date: expenseData.date || new Date().toISOString().split('T')[0],
+          date: expenseData.date || new Date().toISOString().split('T')[0], // Default to today
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Update expenses state immediately
+      // Update local state immediately (optimistic update)
       setExpenses(prev => {
         const newExpenses = [data, ...prev];
         const count = newExpenses.length;
         
-        // Check for milestones
+        /**
+         * Gamification: Check for milestones
+         * 
+         * CODING TIP: Use setTimeout for celebration toasts so they don't
+         * interfere with the success toast. Delays create better UX!
+         */
         if (count === 5) {
           setTimeout(() => {
             toast({
@@ -96,6 +155,7 @@ export const useExpenses = () => {
             });
           }, 500);
         } else if (count === 50) {
+          // Major milestone: Add confetti!
           setTimeout(() => {
             const confetti = (window as any).confetti;
             if (confetti) {
@@ -112,6 +172,7 @@ export const useExpenses = () => {
             });
           }, 500);
         } else if (count % 100 === 0 && count > 0) {
+          // Every 100 expenses: Even bigger celebration!
           setTimeout(() => {
             const confetti = (window as any).confetti;
             if (confetti) {
@@ -132,6 +193,7 @@ export const useExpenses = () => {
         return newExpenses;
       });
       
+      // Success toast
       toast({
         title: "✅ Expense Added",
         description: `₹${expenseData.amount.toLocaleString()} added to ${expenseData.category}`,
@@ -149,6 +211,14 @@ export const useExpenses = () => {
     }
   };
 
+  /**
+   * Remove an expense from the database
+   * 
+   * @param id - Expense ID to delete
+   * 
+   * CODING TIP: Implement soft deletes for production apps!
+   * Instead of deleting, add a 'deleted_at' field. This allows undo functionality.
+   */
   const removeExpense = async (id: string) => {
     try {
       const { error } = await supabase
@@ -158,7 +228,9 @@ export const useExpenses = () => {
 
       if (error) throw error;
 
+      // Update local state
       setExpenses(prev => prev.filter(expense => expense.id !== id));
+      
       toast({
         title: "Expense Removed",
         description: "Expense has been deleted successfully.",
@@ -173,6 +245,12 @@ export const useExpenses = () => {
     }
   };
 
+  /**
+   * Effect: Initial data fetch and real-time subscription setup
+   * 
+   * CODING TIP: Real-time subscriptions are powerful! They keep your UI in sync
+   * automatically when data changes (even from other devices/tabs).
+   */
   useEffect(() => {
     fetchExpenses();
 
@@ -183,38 +261,50 @@ export const useExpenses = () => {
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: '*',                  // Listen to all events (INSERT, UPDATE, DELETE)
             schema: 'public',
             table: 'expenses',
-            filter: `user_id=eq.${user.id}`
+            filter: `user_id=eq.${user.id}` // Only current user's data
           },
           (payload) => {
+            // Handle INSERT events
             if (payload.eventType === 'INSERT' && payload.new) {
               setExpenses(prev => {
+                // Check if expense already exists (prevent duplicates)
                 const exists = prev.some(e => e.id === payload.new.id);
                 if (!exists) {
                   return [payload.new as Expense, ...prev];
                 }
                 return prev;
               });
-            } else if (payload.eventType === 'DELETE' && payload.old) {
+            } 
+            // Handle DELETE events
+            else if (payload.eventType === 'DELETE' && payload.old) {
               setExpenses(prev => prev.filter(e => e.id !== payload.old.id));
             }
+            // Add UPDATE handling here if needed
           }
         )
         .subscribe();
 
+      // Cleanup: Unsubscribe when component unmounts or user changes
       return () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [user]);
+  }, [user]); // Re-run when user changes
 
+  /**
+   * Return public API
+   * 
+   * CODING TIP: Only expose what components need. Keep internal helper
+   * functions private to the hook.
+   */
   return {
-    expenses,
-    loading,
-    addExpense,
-    removeExpense,
-    refetch: fetchExpenses,
+    expenses,         // Array of expense objects
+    loading,          // Boolean: true while fetching
+    addExpense,       // Function to add expense
+    removeExpense,    // Function to delete expense
+    refetch: fetchExpenses, // Function to manually reload data
   };
 };
