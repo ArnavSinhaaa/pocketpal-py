@@ -141,12 +141,21 @@ serve(async (req) => {
      * Convert audio buffer to base64
      * 
      * CODING TIP: Base64 encoding is needed to send binary data in JSON
-     * The client will decode this and create an audio blob
+     * We process in chunks to avoid stack overflow with large audio files
      */
     const arrayBuffer = await response.arrayBuffer();
-    const base64Audio = btoa(
-      String.fromCharCode(...new Uint8Array(arrayBuffer))
-    );
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Convert to base64 in chunks to avoid call stack size exceeded error
+    let binary = '';
+    const chunkSize = 8192; // Process 8KB at a time
+    
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    
+    const base64Audio = btoa(binary);
 
     console.log(`Successfully generated audio (${arrayBuffer.byteLength} bytes)`);
 
