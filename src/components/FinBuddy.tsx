@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Send, X, MessageCircle } from 'lucide-react';
+import { Bot, Send, X, MessageCircle, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,7 +23,10 @@ export function FinBuddy() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -31,6 +34,72 @@ export function FinBuddy() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const playAudio = async (text: string) => {
+    if (!isAudioEnabled || !text) return;
+    
+    try {
+      setIsSpeaking(true);
+      
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: { text }
+      });
+
+      if (error) {
+        console.error('TTS error:', error);
+        if (error.message?.includes('Rate limit')) {
+          toast({ title: 'Voice rate limit', description: 'Try again later.', variant: 'destructive' });
+        }
+        return;
+      }
+
+      if (!data?.audioContent) return;
+
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(data.audioContent), c => c.charCodeAt(0))],
+        { type: 'audio/mpeg' }
+      );
+      
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.play().catch(err => {
+        console.error('Audio playback error:', err);
+        setIsSpeaking(false);
+      });
+
+      audio.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      setIsSpeaking(false);
+    }
+  };
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setIsSpeaking(false);
+  };
+
+  const toggleAudio = () => {
+    if (isAudioEnabled && isSpeaking) {
+      stopAudio();
+    }
+    setIsAudioEnabled(!isAudioEnabled);
+    toast({ title: isAudioEnabled ? 'Voice disabled' : 'Voice enabled' });
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -130,6 +199,11 @@ export function FinBuddy() {
         }
       }
 
+      // Play audio for the complete response
+      if (assistantMessage) {
+        await playAudio(assistantMessage);
+      }
+
       setIsLoading(false);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -180,16 +254,36 @@ export function FinBuddy() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Bot className="h-6 w-6" />
-                    <CardTitle className="text-white">FinBuddy</CardTitle>
+                    <CardTitle className="text-white">
+                      FinBuddy
+                      {isSpeaking && (
+                        <span className="text-xs ml-2 animate-pulse">Speaking...</span>
+                      )}
+                    </CardTitle>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsOpen(false)}
-                    className="text-white hover:bg-white/20"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleAudio}
+                      className="text-white hover:bg-white/20"
+                      title={isAudioEnabled ? 'Disable voice' : 'Enable voice'}
+                    >
+                      {isAudioEnabled ? (
+                        <Volume2 className="h-5 w-5" />
+                      ) : (
+                        <VolumeX className="h-5 w-5" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsOpen(false)}
+                      className="text-white hover:bg-white/20"
+                    >
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
