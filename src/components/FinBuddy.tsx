@@ -54,6 +54,10 @@ export function FinBuddy() {
         console.error('TTS error:', error);
         if (error.message?.includes('Rate limit')) {
           toast({ title: 'Voice rate limit', description: 'Try again later.', variant: 'destructive' });
+        } else if (error.message?.includes('credits')) {
+          toast({ title: '⚠️ Credits Low', description: 'ElevenLabs credits running low. Please top up.', variant: 'destructive' });
+        } else if (error.message?.includes('API key')) {
+          toast({ title: 'Voice error', description: 'Configuration issue.', variant: 'destructive' });
         }
         return;
       }

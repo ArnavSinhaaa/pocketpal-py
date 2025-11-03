@@ -56,10 +56,92 @@ serve(async (req) => {
       });
     }
 
+    /**
+     * CREDIT OPTIMIZATION: Limit text length
+     * 
+     * ElevenLabs charges per character. To save credits:
+     * - Maximum 500 characters per request (adjust as needed)
+     * - Remove emojis which count as characters
+     * - Truncate smartly at sentence boundaries
+     */
+    const MAX_CHARS = 500; // Adjust this to control costs
+    let optimizedText = text
+      .replace(/[👋💪🇮🇳]/g, '') // Remove emojis
+      .trim();
+
+    if (optimizedText.length > MAX_CHARS) {
+      // Truncate at last sentence within limit
+      const sentences = optimizedText.match(/[^.!?]+[.!?]+/g) || [];
+      optimizedText = '';
+      
+      for (const sentence of sentences) {
+        if ((optimizedText + sentence).length <= MAX_CHARS) {
+          optimizedText += sentence;
+        } else {
+          break;
+        }
+      }
+      
+      // If no complete sentences fit, just truncate
+      if (!optimizedText) {
+        optimizedText = text.slice(0, MAX_CHARS) + '...';
+      }
+      
+      console.log(`Text truncated from ${text.length} to ${optimizedText.length} characters`);
+    }
+
+    console.log(`Converting ${optimizedText.length} characters to speech (saves credits!)`);
+
     // Get ElevenLabs API key from environment
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
     if (!ELEVENLABS_API_KEY) {
       throw new Error('ELEVENLABS_API_KEY is not configured');
+    }
+
+    /**
+     * CHECK CREDIT BALANCE BEFORE GENERATING
+     * 
+     * This helps warn users before they run out of credits
+     */
+    try {
+      const subscriptionResponse = await fetch(
+        'https://api.elevenlabs.io/v1/user/subscription',
+        {
+          headers: {
+            'xi-api-key': ELEVENLABS_API_KEY,
+          },
+        }
+      );
+
+      if (subscriptionResponse.ok) {
+        const subscriptionData = await subscriptionResponse.json();
+        const charCount = subscriptionData.character_count || 0;
+        const charLimit = subscriptionData.character_limit || 10000;
+        const remaining = charLimit - charCount;
+        const percentUsed = (charCount / charLimit) * 100;
+
+        console.log(`📊 ElevenLabs Credits: ${remaining.toLocaleString()} / ${charLimit.toLocaleString()} remaining (${percentUsed.toFixed(1)}% used)`);
+
+        // Warn if credits are low
+        if (percentUsed >= 90) {
+          console.warn('🚨 WARNING: Less than 10% of ElevenLabs credits remaining!');
+        } else if (percentUsed >= 75) {
+          console.warn('⚠️ CAUTION: 75% of ElevenLabs credits used');
+        }
+
+        if (remaining < 100) {
+          return new Response(JSON.stringify({ 
+            error: 'ElevenLabs credits critically low. Please top up to continue using voice features.',
+            credits_remaining: remaining
+          }), {
+            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+    } catch (creditCheckError) {
+      console.error('Could not check credit balance:', creditCheckError);
+      // Continue anyway - don't block on credit check failure
     }
 
     /**
@@ -80,13 +162,14 @@ serve(async (req) => {
     /**
      * Call ElevenLabs Text-to-Speech API
      * 
-     * MODEL: eleven_multilingual_v2
-     * - Supports multiple languages including Indian accents
-     * - High quality, emotionally rich
+     * CREDIT OPTIMIZATION: Using eleven_turbo_v2_5
+     * - FASTER generation = lower costs
+     * - Still high quality
+     * - Best for saving credits
      * 
      * EDIT THIS to change model:
-     * - eleven_turbo_v2_5 (faster, lower latency)
-     * - eleven_multilingual_v1 (older model)
+     * - eleven_multilingual_v2 (highest quality, more expensive)
+     * - eleven_turbo_v2 (English only, faster)
      */
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}`,
@@ -97,13 +180,11 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text: text,
-          model_id: 'eleven_multilingual_v2',
+          text: optimizedText, // Use optimized text instead of original
+          model_id: 'eleven_turbo_v2_5', // Faster = cheaper
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.75,
-            style: 0.0,
-            use_speaker_boost: true,
           },
         }),
       }
@@ -157,7 +238,7 @@ serve(async (req) => {
     
     const base64Audio = btoa(binary);
 
-    console.log(`Successfully generated audio (${arrayBuffer.byteLength} bytes)`);
+    console.log(`✅ Generated ${arrayBuffer.byteLength} bytes audio for ${optimizedText.length} characters`);
 
     return new Response(
       JSON.stringify({ audioContent: base64Audio }),
