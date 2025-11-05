@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FinBuddy } from "@/components/FinBuddy";
 import { DonationSection } from "@/components/DonationSection";
 import { Footer } from "@/components/Footer";
-import { IncomeForecast } from "@/components/insights/IncomeForecast";
+import { EnhancedIncomeForecast } from "@/components/insights/EnhancedIncomeForecast";
 import { SpendingInsights } from "@/components/insights/SpendingInsights";
 
 const Index = () => {
@@ -131,7 +131,7 @@ const Index = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <IncomeForecast />
+              <EnhancedIncomeForecast />
               <SpendingInsights />
             </div>
             <Card className="bg-gradient-card border-primary/20">

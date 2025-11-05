@@ -35,6 +35,8 @@ serve(async (req) => {
       });
     }
 
+    const { timeframe = 3, whatIfScenario } = await req.json();
+
     // Fetch historical data
     const [expensesRes, indirectIncomeRes, profileRes] = await Promise.all([
       supabase.from('expenses').select('*').eq('user_id', user.id).order('date', { ascending: true }),
@@ -71,7 +73,21 @@ serve(async (req) => {
     }, 0);
 
     const monthlySalary = profile?.annual_salary ? Number(profile.annual_salary) / 12 : 0;
-    const totalMonthlyIncome = monthlySalary + monthlyIndirectIncome;
+    let totalMonthlyIncome = monthlySalary + monthlyIndirectIncome;
+
+    // Apply what-if scenario if provided
+    let scenarioDescription = '';
+    if (whatIfScenario) {
+      if (whatIfScenario.additionalIncome) {
+        totalMonthlyIncome += Number(whatIfScenario.additionalIncome);
+        scenarioDescription = `\n\nWhat-If Scenario: Adding ₹${Number(whatIfScenario.additionalIncome).toLocaleString('en-IN')} monthly income`;
+      }
+      if (whatIfScenario.incomeGrowthPercent) {
+        const growth = Number(whatIfScenario.incomeGrowthPercent) / 100;
+        totalMonthlyIncome = totalMonthlyIncome * (1 + growth);
+        scenarioDescription += `\n${scenarioDescription ? 'and ' : 'What-If Scenario: '}${whatIfScenario.incomeGrowthPercent}% income growth`;
+      }
+    }
 
     const historicalSummary = Object.entries(monthlyData)
       .map(([month, data]) => `${month}: ₹${data.expenses.toLocaleString('en-IN')} (${data.count} expenses)`)
@@ -98,25 +114,32 @@ serve(async (req) => {
 Your task:
 1. Analyze the user's historical expense patterns and income data
 2. Use regression analysis to identify trends
-3. Predict next 3 months' income and expenses
-4. Provide confidence levels and key insights
-5. Suggest strategies to increase income or optimize expenses
+3. Predict next ${timeframe} month(s)' income and expenses with confidence intervals
+4. Provide confidence levels (high/medium/low) and trend analysis (growth/decline/stable)
+5. Suggest actionable strategies to increase income or optimize expenses
+6. Detect any anomalies or concerning patterns
 
 Format your response as JSON with this structure:
 {
   "forecast": {
-    "nextMonth": { "income": number, "expenses": number, "savings": number },
-    "month2": { "income": number, "expenses": number, "savings": number },
-    "month3": { "income": number, "expenses": number, "savings": number }
+    ${timeframe >= 1 ? '"month1": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },' : ''}
+    ${timeframe >= 2 ? '"month2": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },' : ''}
+    ${timeframe >= 3 ? '"month3": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },' : ''}
+    ${timeframe >= 4 ? '"month4": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },' : ''}
+    ${timeframe >= 5 ? '"month5": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },' : ''}
+    ${timeframe >= 6 ? '"month6": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number }' : ''}
   },
+  "trend": "growth|decline|stable",
   "confidence": "high|medium|low",
+  "summary": "Plain language summary of the forecast",
   "insights": ["insight1", "insight2", ...],
-  "recommendations": ["rec1", "rec2", ...]
+  "recommendations": ["actionable rec1", "actionable rec2", ...],
+  "alerts": ["alert1 if any concerning patterns detected"]
 }`
           },
           {
             role: 'user',
-            content: `Analyze my financial data and forecast next 3 months:
+            content: `Analyze my financial data and forecast next ${timeframe} month(s):
 
 Historical Monthly Expenses:
 ${historicalSummary}
@@ -124,10 +147,11 @@ ${historicalSummary}
 Current Monthly Income: ₹${totalMonthlyIncome.toLocaleString('en-IN')}
 - Salary: ₹${monthlySalary.toLocaleString('en-IN')}
 - Side Income: ₹${monthlyIndirectIncome.toLocaleString('en-IN')}
+${scenarioDescription}
 
 Total months of data: ${Object.keys(monthlyData).length}
 
-Please provide a forecast using regression on the expense trends and suggest ways to optimize my finances.`
+Please provide a ${timeframe}-month forecast using regression on the expense trends. Include confidence intervals (±10-20% based on data volatility), identify the overall trend (growth/decline/stable), detect any anomalies, and provide actionable recommendations to optimize finances.`
           }
         ],
       }),
