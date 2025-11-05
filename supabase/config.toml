@@ -11,3 +11,9 @@ verify_jwt = true
 
 [functions.text-to-speech]
 verify_jwt = true
+
+[functions.budget-optimizer]
+verify_jwt = true
+
+[functions.financial-health]
+verify_jwt = true

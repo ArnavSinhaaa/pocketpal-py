@@ -21,6 +21,8 @@ import { DonationSection } from "@/components/DonationSection";
 import { Footer } from "@/components/Footer";
 import { EnhancedIncomeForecast } from "@/components/insights/EnhancedIncomeForecast";
 import { SpendingInsights } from "@/components/insights/SpendingInsights";
+import { BudgetOptimizer } from "@/components/insights/BudgetOptimizer";
+import { FinancialHealthScore } from "@/components/insights/FinancialHealthScore";
 
 const Index = () => {
   const { user, signOut } = useAuth();
@@ -131,6 +133,8 @@ const Index = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <FinancialHealthScore />
+              <BudgetOptimizer />
               <EnhancedIncomeForecast />
               <SpendingInsights />
             </div>
