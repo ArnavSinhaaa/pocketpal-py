@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      assets: {
+        Row: {
+          asset_type: string
+          created_at: string
+          current_value: number
+          depreciation_rate: number | null
+          id: string
+          name: string
+          notes: string | null
+          purchase_date: string | null
+          purchase_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_type: string
+          created_at?: string
+          current_value: number
+          depreciation_rate?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          purchase_date?: string | null
+          purchase_value: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string
+          current_value?: number
+          depreciation_rate?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          purchase_date?: string | null
+          purchase_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bill_reminders: {
         Row: {
           amount: number
@@ -104,6 +146,51 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          file_size: number | null
+          file_url: string
+          id: string
+          notes: string | null
+          related_expense_id: string | null
+          related_investment_id: string | null
+          tags: string[] | null
+          title: string
+          upload_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          notes?: string | null
+          related_expense_id?: string | null
+          related_investment_id?: string | null
+          tags?: string[] | null
+          title: string
+          upload_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          notes?: string | null
+          related_expense_id?: string | null
+          related_investment_id?: string | null
+          tags?: string[] | null
+          title?: string
+          upload_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       financial_goals: {
         Row: {
           category: string | null
@@ -170,6 +257,159 @@ export type Database = {
         }
         Relationships: []
       }
+      insurance_policies: {
+        Row: {
+          beneficiaries: string | null
+          coverage_amount: number
+          created_at: string
+          end_date: string
+          id: string
+          next_premium_date: string | null
+          notes: string | null
+          policy_number: string
+          policy_type: string
+          premium_amount: number
+          premium_frequency: string
+          provider: string
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          beneficiaries?: string | null
+          coverage_amount: number
+          created_at?: string
+          end_date: string
+          id?: string
+          next_premium_date?: string | null
+          notes?: string | null
+          policy_number: string
+          policy_type: string
+          premium_amount: number
+          premium_frequency: string
+          provider: string
+          start_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          beneficiaries?: string | null
+          coverage_amount?: number
+          created_at?: string
+          end_date?: string
+          id?: string
+          next_premium_date?: string | null
+          notes?: string | null
+          policy_number?: string
+          policy_type?: string
+          premium_amount?: number
+          premium_frequency?: string
+          provider?: string
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      investments: {
+        Row: {
+          category: string | null
+          created_at: string
+          current_price: number | null
+          current_value: number | null
+          id: string
+          investment_type: string
+          name: string
+          notes: string | null
+          purchase_date: string
+          purchase_price: number
+          quantity: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          current_price?: number | null
+          current_value?: number | null
+          id?: string
+          investment_type: string
+          name: string
+          notes?: string | null
+          purchase_date: string
+          purchase_price: number
+          quantity?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          current_price?: number | null
+          current_value?: number | null
+          id?: string
+          investment_type?: string
+          name?: string
+          notes?: string | null
+          purchase_date?: string
+          purchase_price?: number
+          quantity?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      liabilities: {
+        Row: {
+          created_at: string
+          emi_amount: number | null
+          end_date: string | null
+          id: string
+          interest_rate: number
+          lender: string
+          liability_type: string
+          next_payment_date: string | null
+          notes: string | null
+          outstanding_amount: number
+          principal_amount: number
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emi_amount?: number | null
+          end_date?: string | null
+          id?: string
+          interest_rate: number
+          lender: string
+          liability_type: string
+          next_payment_date?: string | null
+          notes?: string | null
+          outstanding_amount: number
+          principal_amount: number
+          start_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emi_amount?: number | null
+          end_date?: string | null
+          id?: string
+          interest_rate?: number
+          lender?: string
+          liability_type?: string
+          next_payment_date?: string | null
+          notes?: string | null
+          outstanding_amount?: number
+          principal_amount?: number
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           annual_salary: number | null
@@ -192,6 +432,45 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tax_deductions: {
+        Row: {
+          amount: number
+          claimed: boolean | null
+          created_at: string
+          deduction_type: string
+          description: string
+          financial_year: string
+          id: string
+          proof_document_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          claimed?: boolean | null
+          created_at?: string
+          deduction_type: string
+          description: string
+          financial_year: string
+          id?: string
+          proof_document_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          claimed?: boolean | null
+          created_at?: string
+          deduction_type?: string
+          description?: string
+          financial_year?: string
+          id?: string
+          proof_document_url?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -223,6 +502,33 @@ export type Database = {
           id?: string
           points?: number
           title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_photos: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          room_type: string | null
+          upload_timestamp: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          room_type?: string | null
+          upload_timestamp?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          room_type?: string | null
+          upload_timestamp?: string
           user_id?: string
         }
         Relationships: []

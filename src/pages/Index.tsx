@@ -23,6 +23,9 @@ import { EnhancedIncomeForecast } from "@/components/insights/EnhancedIncomeFore
 import { SpendingInsights } from "@/components/insights/SpendingInsights";
 import { BudgetOptimizer } from "@/components/insights/BudgetOptimizer";
 import { FinancialHealthScore } from "@/components/insights/FinancialHealthScore";
+import { InvestmentPortfolio } from "@/components/ca-features/InvestmentPortfolio";
+import { TaxOptimizer } from "@/components/ca-features/TaxOptimizer";
+import { NetWorthDashboard } from "@/components/ca-features/NetWorthDashboard";
 
 const Index = () => {
   const { user, signOut } = useAuth();

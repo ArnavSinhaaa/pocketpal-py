@@ -17,3 +17,12 @@ verify_jwt = true
 
 [functions.financial-health]
 verify_jwt = true
+
+[functions.portfolio-analysis]
+verify_jwt = true
+
+[functions.tax-optimizer]
+verify_jwt = true
+
+[functions.net-worth-calculator]
+verify_jwt = true
