@@ -28,6 +28,7 @@ import { InvestmentPortfolio } from "@/components/ca-features/InvestmentPortfoli
 import { TaxOptimizer } from "@/components/ca-features/TaxOptimizer";
 import { NetWorthDashboard } from "@/components/ca-features/NetWorthDashboard";
 import { DebtManagement } from "@/components/ca-features/DebtManagement";
+import { RetirementPlanner } from "@/components/ca-features/RetirementPlanner";
 
 const Index = () => {
   const { user, signOut } = useAuth();
@@ -152,7 +153,8 @@ const Index = () => {
               </div>
               <div className="grid grid-cols-1 gap-6">
                 <NetWorthDashboard />
-                <DebtManagement />
+            <DebtManagement />
+            <RetirementPlanner />
                 <InvestmentPortfolio />
                 <TaxOptimizer />
               </div>

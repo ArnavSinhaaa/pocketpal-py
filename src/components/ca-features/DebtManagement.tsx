@@ -4,9 +4,13 @@ import { Button } from '@/components/ui/button';
 import { useDebts } from '@/hooks/useDebts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Target, TrendingDown, Calculator, AlertCircle, PiggyBank } from 'lucide-react';
+import { Loader2, Target, TrendingDown, Calculator, AlertCircle, PiggyBank, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface DebtStrategy {
   payoffOrder: Array<{
@@ -56,10 +60,66 @@ interface DebtAnalysis {
 }
 
 export const DebtManagement = () => {
-  const { debts, loading: dataLoading } = useDebts();
+  const { debts, loading: dataLoading, addDebt, deleteDebt } = useDebts();
   const [analysis, setAnalysis] = useState<DebtAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  // Form state
+  const [formData, setFormData] = useState({
+    liability_type: '',
+    lender: '',
+    principal_amount: '',
+    outstanding_amount: '',
+    interest_rate: '',
+    emi_amount: '',
+    start_date: '',
+    end_date: '',
+    next_payment_date: '',
+    notes: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.liability_type || !formData.lender || !formData.principal_amount || 
+        !formData.outstanding_amount || !formData.interest_rate || !formData.start_date) {
+      toast({
+        title: "Error",
+        description: "Please fill all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addDebt({
+      liability_type: formData.liability_type,
+      lender: formData.lender,
+      principal_amount: Number(formData.principal_amount),
+      outstanding_amount: Number(formData.outstanding_amount),
+      interest_rate: Number(formData.interest_rate),
+      emi_amount: formData.emi_amount ? Number(formData.emi_amount) : undefined,
+      start_date: formData.start_date,
+      end_date: formData.end_date || undefined,
+      next_payment_date: formData.next_payment_date || undefined,
+      notes: formData.notes || undefined,
+    });
+
+    setFormData({
+      liability_type: '',
+      lender: '',
+      principal_amount: '',
+      outstanding_amount: '',
+      interest_rate: '',
+      emi_amount: '',
+      start_date: '',
+      end_date: '',
+      next_payment_date: '',
+      notes: ''
+    });
+    setDialogOpen(false);
+  };
 
   const fetchAnalysis = async () => {
     setLoading(true);
@@ -115,16 +175,158 @@ export const DebtManagement = () => {
               Snowball vs Avalanche calculators with interest savings projections
             </CardDescription>
           </div>
-          <Button onClick={fetchAnalysis} disabled={loading || debts.length === 0}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              'Analyze Debt Strategy'
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Debt
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add New Debt/Liability</DialogTitle>
+                  <DialogDescription>
+                    Enter the details of your debt or liability
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="liability_type">Debt Type *</Label>
+                      <Select value={formData.liability_type} onValueChange={(v) => setFormData({...formData, liability_type: v})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Home Loan">Home Loan</SelectItem>
+                          <SelectItem value="Car Loan">Car Loan</SelectItem>
+                          <SelectItem value="Personal Loan">Personal Loan</SelectItem>
+                          <SelectItem value="Education Loan">Education Loan</SelectItem>
+                          <SelectItem value="Credit Card">Credit Card</SelectItem>
+                          <SelectItem value="Business Loan">Business Loan</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lender">Lender/Bank *</Label>
+                      <Input
+                        id="lender"
+                        value={formData.lender}
+                        onChange={(e) => setFormData({...formData, lender: e.target.value})}
+                        placeholder="HDFC Bank"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="principal_amount">Principal Amount *</Label>
+                      <Input
+                        id="principal_amount"
+                        type="number"
+                        value={formData.principal_amount}
+                        onChange={(e) => setFormData({...formData, principal_amount: e.target.value})}
+                        placeholder="500000"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="outstanding_amount">Outstanding Amount *</Label>
+                      <Input
+                        id="outstanding_amount"
+                        type="number"
+                        value={formData.outstanding_amount}
+                        onChange={(e) => setFormData({...formData, outstanding_amount: e.target.value})}
+                        placeholder="350000"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="interest_rate">Interest Rate (%) *</Label>
+                      <Input
+                        id="interest_rate"
+                        type="number"
+                        step="0.01"
+                        value={formData.interest_rate}
+                        onChange={(e) => setFormData({...formData, interest_rate: e.target.value})}
+                        placeholder="8.5"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="emi_amount">EMI Amount</Label>
+                      <Input
+                        id="emi_amount"
+                        type="number"
+                        value={formData.emi_amount}
+                        onChange={(e) => setFormData({...formData, emi_amount: e.target.value})}
+                        placeholder="15000"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="start_date">Start Date *</Label>
+                      <Input
+                        id="start_date"
+                        type="date"
+                        value={formData.start_date}
+                        onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="end_date">End Date</Label>
+                      <Input
+                        id="end_date"
+                        type="date"
+                        value={formData.end_date}
+                        onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="next_payment_date">Next Payment</Label>
+                      <Input
+                        id="next_payment_date"
+                        type="date"
+                        value={formData.next_payment_date}
+                        onChange={(e) => setFormData({...formData, next_payment_date: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notes</Label>
+                    <Input
+                      id="notes"
+                      value={formData.notes}
+                      onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                      placeholder="Additional notes"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">Add Debt</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Button onClick={fetchAnalysis} disabled={loading || debts.length === 0}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                'Analyze Debt Strategy'
+              )}
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -161,11 +363,21 @@ export const DebtManagement = () => {
               {debts.map((debt) => (
                 <div key={debt.id} className="p-4 bg-card rounded-lg border">
                   <div className="flex items-center justify-between mb-2">
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">{debt.liability_type}</p>
                       <p className="text-sm text-muted-foreground">{debt.lender}</p>
                     </div>
-                    <Badge variant="outline">{Number(debt.interest_rate)}% APR</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{Number(debt.interest_rate)}% APR</Badge>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => deleteDebt(debt.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
