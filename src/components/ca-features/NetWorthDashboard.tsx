@@ -164,7 +164,7 @@ export const NetWorthDashboard = () => {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -194,9 +194,9 @@ export const NetWorthDashboard = () => {
               <div className="p-4 bg-card rounded-lg border">
                 <p className="text-sm font-medium mb-2">Financial Ratios</p>
                 <div className="space-y-1 text-sm">
-                  <p>Debt-to-Asset: <span className="font-semibold">{(analysis.financialRatios.debtToAssetRatio * 100).toFixed(1)}%</span></p>
-                  <p>Liquidity: <span className="font-semibold">{analysis.financialRatios.liquidityRatio.toFixed(2)}</span></p>
-                  <p>Solvency: <span className="font-semibold">{analysis.financialRatios.solvencyRatio.toFixed(2)}</span></p>
+                  <p>Debt-to-Asset: <span className="font-semibold">{((analysis.financialRatios.debtToAssetRatio || 0) * 100).toFixed(1)}%</span></p>
+                  <p>Liquidity: <span className="font-semibold">{(analysis.financialRatios.liquidityRatio || 0).toFixed(2)}</span></p>
+                  <p>Solvency: <span className="font-semibold">{(analysis.financialRatios.solvencyRatio || 0).toFixed(2)}</span></p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">{analysis.financialRatios.interpretation}</p>
               </div>
@@ -244,7 +244,7 @@ export const NetWorthDashboard = () => {
                 <div className="p-4 bg-card rounded-lg border">
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-medium">Short-term ({analysis.netWorthGrowthPlan.shortTerm.timeframe})</p>
-                    <Badge variant="outline">₹{analysis.netWorthGrowthPlan.shortTerm.target.toLocaleString('en-IN')}</Badge>
+                    <Badge variant="outline">₹{(analysis.netWorthGrowthPlan.shortTerm.target || 0).toLocaleString('en-IN')}</Badge>
                   </div>
                   <ul className="space-y-1 text-sm">
                     {analysis.netWorthGrowthPlan.shortTerm.actions.map((action, i) => (
@@ -256,7 +256,7 @@ export const NetWorthDashboard = () => {
                 <div className="p-4 bg-card rounded-lg border">
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-medium">Medium-term ({analysis.netWorthGrowthPlan.mediumTerm.timeframe})</p>
-                    <Badge variant="outline">₹{analysis.netWorthGrowthPlan.mediumTerm.target.toLocaleString('en-IN')}</Badge>
+                    <Badge variant="outline">₹{(analysis.netWorthGrowthPlan.mediumTerm.target || 0).toLocaleString('en-IN')}</Badge>
                   </div>
                   <ul className="space-y-1 text-sm">
                     {analysis.netWorthGrowthPlan.mediumTerm.actions.map((action, i) => (
@@ -268,7 +268,7 @@ export const NetWorthDashboard = () => {
                 <div className="p-4 bg-card rounded-lg border">
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-medium">Long-term ({analysis.netWorthGrowthPlan.longTerm.timeframe})</p>
-                    <Badge variant="outline">₹{analysis.netWorthGrowthPlan.longTerm.target.toLocaleString('en-IN')}</Badge>
+                    <Badge variant="outline">₹{(analysis.netWorthGrowthPlan.longTerm.target || 0).toLocaleString('en-IN')}</Badge>
                   </div>
                   <ul className="space-y-1 text-sm">
                     {analysis.netWorthGrowthPlan.longTerm.actions.map((action, i) => (
@@ -291,7 +291,7 @@ export const NetWorthDashboard = () => {
                         <p className="text-xs text-muted-foreground">{milestone.estimatedTimeframe}</p>
                       </div>
                       <Badge variant="outline" className="ml-4">
-                        ₹{milestone.targetAmount.toLocaleString('en-IN')}
+                        ₹{(milestone.targetAmount || 0).toLocaleString('en-IN')}
                       </Badge>
                     </div>
                   ))}
