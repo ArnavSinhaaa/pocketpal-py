@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ExpenseTracker } from "@/components/dashboard/ExpenseTracker";
 import { GoalsTracker } from "@/components/dashboard/GoalsTracker";
@@ -8,7 +9,6 @@ import { Achievements } from "@/components/dashboard/Achievements";
 import { useAuth } from "@/contexts/AuthContext";
 import { Wallet, Target, Bell, Trophy, TrendingUp, LogOut, User, Lightbulb, Bot } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
