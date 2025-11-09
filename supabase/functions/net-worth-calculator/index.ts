@@ -86,44 +86,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a CA-level wealth management analyst. Analyze net worth and provide expert insights on:
-- Asset-liability ratio analysis
-- Liquidity and solvency ratios
-- Wealth growth trajectory
-- Risk assessment
-- Debt-to-asset ratio evaluation
-- Financial independence metrics
-- Net worth optimization strategies
-
-Format response as JSON:
-{
-  "financialRatios": {
-    "debtToAssetRatio": number,
-    "liquidityRatio": number,
-    "solvencyRatio": number,
-    "interpretation": "what these ratios mean"
-  },
-  "wealthGrade": "A+|A|B|C|D",
-  "analysis": {
-    "strengths": ["strength1", "strength2"],
-    "concerns": ["concern1", "concern2"],
-    "opportunities": ["opportunity1", "opportunity2"]
-  },
-  "netWorthGrowthPlan": {
-    "shortTerm": {"target": number, "timeframe": "3-6 months", "actions": ["..."]},
-    "mediumTerm": {"target": number, "timeframe": "1-2 years", "actions": ["..."]},
-    "longTerm": {"target": number, "timeframe": "5+ years", "actions": ["..."]}
-  },
-  "recommendations": {
-    "assetOptimization": ["rec1", "rec2"],
-    "debtManagement": ["rec1", "rec2"],
-    "wealthBuilding": ["rec1", "rec2"]
-  },
-  "milestones": [
-    {"milestone": "description", "targetAmount": number, "estimatedTimeframe": "..."}
-  ],
-  "summary": "comprehensive net worth analysis"
-}`
+            content: 'You are a CA-level wealth management analyst. Analyze net worth data and provide expert financial insights.'
           },
           {
             role: 'user',
@@ -149,6 +112,95 @@ Financial Goals: ${goals.length} active goals totaling ₹${goals.reduce((sum, g
 Provide a CA-level net worth analysis with specific strategies to optimize wealth and achieve financial independence.`
           }
         ],
+        tools: [{
+          type: 'function',
+          function: {
+            name: 'analyze_net_worth',
+            description: 'Provide comprehensive net worth analysis with financial ratios and recommendations',
+            parameters: {
+              type: 'object',
+              properties: {
+                financialRatios: {
+                  type: 'object',
+                  properties: {
+                    debtToAssetRatio: { type: 'number' },
+                    liquidityRatio: { type: 'number' },
+                    solvencyRatio: { type: 'number' },
+                    interpretation: { type: 'string' }
+                  },
+                  required: ['debtToAssetRatio', 'liquidityRatio', 'solvencyRatio', 'interpretation']
+                },
+                wealthGrade: { type: 'string', enum: ['A+', 'A', 'B', 'C', 'D'] },
+                analysis: {
+                  type: 'object',
+                  properties: {
+                    strengths: { type: 'array', items: { type: 'string' } },
+                    concerns: { type: 'array', items: { type: 'string' } },
+                    opportunities: { type: 'array', items: { type: 'string' } }
+                  },
+                  required: ['strengths', 'concerns', 'opportunities']
+                },
+                netWorthGrowthPlan: {
+                  type: 'object',
+                  properties: {
+                    shortTerm: {
+                      type: 'object',
+                      properties: {
+                        target: { type: 'number' },
+                        timeframe: { type: 'string' },
+                        actions: { type: 'array', items: { type: 'string' } }
+                      },
+                      required: ['target', 'timeframe', 'actions']
+                    },
+                    mediumTerm: {
+                      type: 'object',
+                      properties: {
+                        target: { type: 'number' },
+                        timeframe: { type: 'string' },
+                        actions: { type: 'array', items: { type: 'string' } }
+                      },
+                      required: ['target', 'timeframe', 'actions']
+                    },
+                    longTerm: {
+                      type: 'object',
+                      properties: {
+                        target: { type: 'number' },
+                        timeframe: { type: 'string' },
+                        actions: { type: 'array', items: { type: 'string' } }
+                      },
+                      required: ['target', 'timeframe', 'actions']
+                    }
+                  },
+                  required: ['shortTerm', 'mediumTerm', 'longTerm']
+                },
+                recommendations: {
+                  type: 'object',
+                  properties: {
+                    assetOptimization: { type: 'array', items: { type: 'string' } },
+                    debtManagement: { type: 'array', items: { type: 'string' } },
+                    wealthBuilding: { type: 'array', items: { type: 'string' } }
+                  },
+                  required: ['assetOptimization', 'debtManagement', 'wealthBuilding']
+                },
+                milestones: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      milestone: { type: 'string' },
+                      targetAmount: { type: 'number' },
+                      estimatedTimeframe: { type: 'string' }
+                    },
+                    required: ['milestone', 'targetAmount', 'estimatedTimeframe']
+                  }
+                },
+                summary: { type: 'string' }
+              },
+              required: ['financialRatios', 'wealthGrade', 'analysis', 'netWorthGrowthPlan', 'recommendations', 'milestones', 'summary']
+            }
+          }
+        }],
+        tool_choice: { type: 'function', function: { name: 'analyze_net_worth' } }
       }),
     });
 
@@ -179,16 +231,14 @@ Provide a CA-level net worth analysis with specific strategies to optimize wealt
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     
-    let jsonContent = content;
-    if (content.includes('```json')) {
-      jsonContent = content.split('```json')[1].split('```')[0].trim();
-    } else if (content.includes('```')) {
-      jsonContent = content.split('```')[1].split('```')[0].trim();
+    if (!toolCall || !toolCall.function?.arguments) {
+      console.error('No tool call in response:', JSON.stringify(data));
+      throw new Error('AI did not return structured data');
     }
     
-    const analysisData = JSON.parse(jsonContent);
+    const analysisData = JSON.parse(toolCall.function.arguments);
 
     // Add actual values to response
     const enrichedData = {
