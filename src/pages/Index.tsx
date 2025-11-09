@@ -8,6 +8,7 @@ import { Achievements } from "@/components/dashboard/Achievements";
 import { useAuth } from "@/contexts/AuthContext";
 import { Wallet, Target, Bell, Trophy, TrendingUp, LogOut, User, Lightbulb, Bot } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -140,6 +141,19 @@ const Index = () => {
               <BudgetOptimizer />
               <EnhancedIncomeForecast />
               <SpendingInsights />
+            </div>
+            
+            {/* CA-Level Features */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 pt-6 border-t">
+                <h3 className="text-xl font-bold">Advanced CA Features</h3>
+                <Badge variant="secondary">Professional</Badge>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <NetWorthDashboard />
+                <InvestmentPortfolio />
+                <TaxOptimizer />
+              </div>
             </div>
             <Card className="bg-gradient-card border-primary/20">
               <CardHeader>
