@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Wallet, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CursorGlow } from '@/components/CursorGlow';
+import { use3DTilt } from '@/hooks/use3DTilt';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -20,6 +21,7 @@ const Auth = () => {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { ref: cardRef } = use3DTilt({ maxTilt: 10, scale: 1.02, glare: true });
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +99,20 @@ const Auth = () => {
           <p className="text-muted-foreground">Smart Finance Manager for India</p>
         </div>
 
-        <Card className="shadow-elevated border-0 bg-card/80 backdrop-blur-sm hover:shadow-glow transition-all duration-500 animate-scale-in">
+        <Card 
+          ref={cardRef}
+          className="shadow-elevated border-0 bg-card/80 backdrop-blur-sm hover:shadow-glow transition-shadow duration-500 animate-scale-in relative overflow-hidden"
+          style={{
+            transformStyle: 'preserve-3d',
+          }}
+        >
+          {/* Glare effect */}
+          <div 
+            className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-20 transition-opacity duration-300"
+            style={{
+              background: 'radial-gradient(circle at var(--glare-x, 50%) var(--glare-y, 50%), rgba(255,255,255,0.4) 0%, transparent 50%)',
+            }}
+          />
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Get Started</CardTitle>
             <CardDescription className="text-center">

@@ -16,6 +16,7 @@ import { IndirectIncomeSection } from "./IndirectIncomeSection";
 import { TaxBreakdownSection } from "./TaxBreakdownSection";
 import { ExpensePieChart } from "./ExpensePieChart";
 import { CategoryManager } from "./CategoryManager";
+import { TiltCard } from "@/components/TiltCard";
 
 
 // Indian Tax Slabs for FY 2025-26
@@ -121,7 +122,7 @@ export function ExpenseTracker() {
       />
 
       {/* Quick Expense Entry */}
-      <Card className="shadow-card border-0 bg-gradient-card">
+      <TiltCard className="shadow-card border-0 bg-gradient-card">
         <CardHeader className="bg-gradient-primary/10 rounded-t-lg">
           <div className="flex items-center justify-between">
             <div>
@@ -195,13 +196,13 @@ export function ExpenseTracker() {
             ))}
           </div>
         </CardContent>
-      </Card>
+      </TiltCard>
 
       {/* Financial Overview Dashboard */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Financial Cards */}
         <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="shadow-card border-primary/20">
+          <TiltCard className="shadow-card border-primary/20" maxTilt={5}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -221,9 +222,9 @@ export function ExpenseTracker() {
                 <Calculator className="h-8 w-8 text-primary" />
               </div>
             </CardContent>
-          </Card>
+          </TiltCard>
 
-          <Card className="shadow-card">
+          <TiltCard className="shadow-card" maxTilt={5}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -234,9 +235,9 @@ export function ExpenseTracker() {
                 <IndianRupee className="h-8 w-8 text-success" />
               </div>
             </CardContent>
-          </Card>
+          </TiltCard>
 
-          <Card className="shadow-card">
+          <TiltCard className="shadow-card" maxTilt={5}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -247,9 +248,9 @@ export function ExpenseTracker() {
                 <TrendingUp className="h-8 w-8 text-destructive" />
               </div>
             </CardContent>
-          </Card>
+          </TiltCard>
 
-          <Card className="shadow-card">
+          <TiltCard className="shadow-card" maxTilt={5}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -262,9 +263,9 @@ export function ExpenseTracker() {
                 <TrendingDown className={`h-8 w-8 ${financialData.netSavings >= 0 ? 'text-success' : 'text-destructive'}`} />
               </div>
             </CardContent>
-          </Card>
+          </TiltCard>
 
-          <Card className="shadow-card border-success/20 bg-success/5">
+          <TiltCard className="shadow-card border-success/20 bg-success/5" maxTilt={5}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -277,9 +278,9 @@ export function ExpenseTracker() {
                 <TrendingUp className={`h-8 w-8 ${financialData.annualSavings >= 0 ? 'text-success' : 'text-destructive'}`} />
               </div>
             </CardContent>
-          </Card>
+          </TiltCard>
 
-          <Card className="shadow-card">
+          <TiltCard className="shadow-card" maxTilt={5}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -294,12 +295,12 @@ export function ExpenseTracker() {
                 </Badge>
               </div>
             </CardContent>
-          </Card>
+          </TiltCard>
         </div>
 
         {/* Expense Breakdown Chart */}
         <div className="lg:col-span-1">
-          <Card className="shadow-card h-full">
+          <TiltCard className="shadow-card h-full" maxTilt={5}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <PieChart className="h-5 w-5" />
@@ -309,13 +310,13 @@ export function ExpenseTracker() {
             <CardContent>
               <ExpensePieChart expenses={expenses} />
             </CardContent>
-          </Card>
+          </TiltCard>
         </div>
       </div>
 
       {/* Expenses List */}
       {expenses.length > 0 && (
-        <Card className="shadow-card">
+        <TiltCard className="shadow-card" maxTilt={5}>
           <CardHeader>
             <CardTitle>Recent Expenses</CardTitle>
           </CardHeader>
@@ -341,7 +342,7 @@ export function ExpenseTracker() {
               ))}
             </div>
           </CardContent>
-        </Card>
+        </TiltCard>
       )}
     </div>
   );
