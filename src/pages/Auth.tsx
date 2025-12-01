@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Wallet, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { CursorGlow } from '@/components/CursorGlow';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -82,18 +83,21 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-surface flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen bg-gradient-surface flex items-center justify-center p-4 relative overflow-hidden">
+      <CursorGlow />
+      <div className="w-full max-w-md space-y-6 relative z-10">
         {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mx-auto shadow-glow">
+        <div className="text-center space-y-2 animate-fade-in">
+          <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mx-auto shadow-glow hover-scale transition-all duration-300">
             <Wallet className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold">Personal Finance Manager</h1>
-          <p className="text-muted-foreground">Manage your finances with ease</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            FinMG
+          </h1>
+          <p className="text-muted-foreground">Smart Finance Manager for India</p>
         </div>
 
-        <Card className="shadow-elevated border-0 bg-card/80 backdrop-blur-sm">
+        <Card className="shadow-elevated border-0 bg-card/80 backdrop-blur-sm hover:shadow-glow transition-all duration-500 animate-scale-in">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Get Started</CardTitle>
             <CardDescription className="text-center">
