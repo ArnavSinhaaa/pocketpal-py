@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { CalendarIcon, Plus, Target, TrendingUp, Edit, Trash2 } from "lucide-react";
 import { useGoals } from "@/hooks/useGoals";
 import { cn } from "@/lib/utils";
+import { TiltCard } from "@/components/TiltCard";
 
 const toCurrency = (n: number) => new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -71,7 +72,7 @@ export function GoalsTracker() {
   return (
     <div className="space-y-6">
       {/* Add Goal Section */}
-      <Card className="shadow-card border-0 bg-gradient-card">
+      <TiltCard className="shadow-card border-0 bg-gradient-card">
         <CardHeader className="bg-gradient-primary/10 rounded-t-lg">
           <CardTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
@@ -144,7 +145,7 @@ export function GoalsTracker() {
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </TiltCard>
 
       {/* Goals List */}
       {goals.length > 0 ? (
@@ -155,10 +156,10 @@ export function GoalsTracker() {
             const remaining = Math.max(0, goal.target_amount - goal.current_amount);
 
             return (
-              <Card key={goal.id} className={cn(
+              <TiltCard key={goal.id} className={cn(
                 "shadow-card border-2 transition-all",
                 isCompleted ? "border-success bg-success/5" : "border-border"
-              )}>
+              )} maxTilt={6}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
@@ -233,12 +234,12 @@ export function GoalsTracker() {
                     )}
                   </div>
                 </CardContent>
-              </Card>
+              </TiltCard>
             );
           })}
         </div>
       ) : (
-        <Card className="shadow-card">
+        <TiltCard className="shadow-card">
           <CardContent className="p-12 text-center">
             <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No Financial Goals Yet</h3>
@@ -252,7 +253,7 @@ export function GoalsTracker() {
               Create Your First Goal
             </Button>
           </CardContent>
-        </Card>
+        </TiltCard>
       )}
     </div>
   );
