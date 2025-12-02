@@ -30,6 +30,7 @@ import { NetWorthDashboard } from "@/components/ca-features/NetWorthDashboard";
 import { DebtManagement } from "@/components/ca-features/DebtManagement";
 import { RetirementPlanner } from "@/components/ca-features/RetirementPlanner";
 import { ParallaxSection, ScrollProgressBar } from "@/components/ParallaxSection";
+import { FloatingParticles } from "@/components/FloatingParticles";
 
 const Index = () => {
   const { user, signOut } = useAuth();
@@ -39,7 +40,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background overflow-x-hidden relative">
+      <FloatingParticles count={30} />
       <ScrollProgressBar />
       <FinBuddy />
       
