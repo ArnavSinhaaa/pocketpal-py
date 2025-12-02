@@ -29,6 +29,7 @@ import { TaxOptimizer } from "@/components/ca-features/TaxOptimizer";
 import { NetWorthDashboard } from "@/components/ca-features/NetWorthDashboard";
 import { DebtManagement } from "@/components/ca-features/DebtManagement";
 import { RetirementPlanner } from "@/components/ca-features/RetirementPlanner";
+import { ParallaxSection, ScrollProgressBar } from "@/components/ParallaxSection";
 
 const Index = () => {
   const { user, signOut } = useAuth();
@@ -38,10 +39,12 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      <ScrollProgressBar />
       <FinBuddy />
+      
       {/* Header */}
-      <div className="border-b bg-gradient-card shadow-card">
+      <div className="border-b bg-gradient-card shadow-card sticky top-0 z-40 backdrop-blur-sm bg-background/80">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -121,122 +124,164 @@ const Index = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="expenses" className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Expense Tracking</h2>
-                <p className="text-muted-foreground">Monitor your spending and manage your budget</p>
+          <TabsContent value="expenses" className="space-y-6">
+            <ParallaxSection fadeIn speed={0.08}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">Expense Tracking</h2>
+                  <p className="text-muted-foreground">Monitor your spending and manage your budget</p>
+                </div>
               </div>
-            </div>
-            <ExpenseTracker />
+            </ParallaxSection>
+            <ParallaxSection fadeIn speed={0.12} delay={100}>
+              <ExpenseTracker />
+            </ParallaxSection>
           </TabsContent>
 
-          <TabsContent value="insights" className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">AI-Powered Insights</h2>
-                <p className="text-muted-foreground">Get intelligent forecasts and personalized savings recommendations</p>
+          <TabsContent value="insights" className="space-y-6">
+            <ParallaxSection fadeIn speed={0.08}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">AI-Powered Insights</h2>
+                  <p className="text-muted-foreground">Get intelligent forecasts and personalized savings recommendations</p>
+                </div>
               </div>
-            </div>
+            </ParallaxSection>
+            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <FinancialHealthScore />
-              <BudgetOptimizer />
-              <EnhancedIncomeForecast />
-              <SpendingInsights />
+              <ParallaxSection fadeIn speed={0.1} delay={0}>
+                <FinancialHealthScore />
+              </ParallaxSection>
+              <ParallaxSection fadeIn speed={0.1} delay={100}>
+                <BudgetOptimizer />
+              </ParallaxSection>
+              <ParallaxSection fadeIn speed={0.1} delay={200}>
+                <EnhancedIncomeForecast />
+              </ParallaxSection>
+              <ParallaxSection fadeIn speed={0.1} delay={300}>
+                <SpendingInsights />
+              </ParallaxSection>
             </div>
             
             {/* CA-Level Features */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 pt-6 border-t">
-                <h3 className="text-xl font-bold">Advanced CA Features</h3>
-                <Badge variant="secondary">Professional</Badge>
+            <ParallaxSection fadeIn speed={0.08} delay={400}>
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 pt-6 border-t">
+                  <h3 className="text-xl font-bold">Advanced CA Features</h3>
+                  <Badge variant="secondary">Professional</Badge>
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                  <ParallaxSection fadeIn speed={0.12} delay={0}>
+                    <NetWorthDashboard />
+                  </ParallaxSection>
+                  <ParallaxSection fadeIn speed={0.12} delay={100}>
+                    <DebtManagement />
+                  </ParallaxSection>
+                  <ParallaxSection fadeIn speed={0.12} delay={200}>
+                    <RetirementPlanner />
+                  </ParallaxSection>
+                  <ParallaxSection fadeIn speed={0.12} delay={300}>
+                    <InvestmentPortfolio />
+                  </ParallaxSection>
+                  <ParallaxSection fadeIn speed={0.12} delay={400}>
+                    <TaxOptimizer />
+                  </ParallaxSection>
+                </div>
               </div>
-              <div className="grid grid-cols-1 gap-6">
-                <NetWorthDashboard />
-            <DebtManagement />
-            <RetirementPlanner />
-                <InvestmentPortfolio />
-                <TaxOptimizer />
-              </div>
-            </div>
-            <Card className="bg-gradient-card border-primary/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-primary" />
-                  Tax Planner Assistant
-                </CardTitle>
-                <CardDescription>
-                  Ask FinBuddy about tax slabs, deductions, and how they impact your income
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-3">
-                  FinBuddy can now explain your tax situation in plain language! Try asking:
-                </p>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary">•</span>
-                    <span>"Explain my tax slabs based on my income"</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary">•</span>
-                    <span>"How much tax do I pay in each slab?"</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary">•</span>
-                    <span>"What deductions can lower my tax?"</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary">•</span>
-                    <span>"Should I choose old or new tax regime?"</span>
-                  </li>
-                </ul>
-                <Button 
-                  onClick={() => document.querySelector<HTMLElement>('[data-finbuddy-button]')?.click()}
-                  className="mt-4 w-full"
-                  variant="outline"
-                >
-                  Open Tax Planner Chat
-                </Button>
-              </CardContent>
-            </Card>
+            </ParallaxSection>
+            
+            <ParallaxSection fadeIn speed={0.1} delay={500} scaleOnScroll>
+              <Card className="bg-gradient-card border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bot className="h-5 w-5 text-primary" />
+                    Tax Planner Assistant
+                  </CardTitle>
+                  <CardDescription>
+                    Ask FinBuddy about tax slabs, deductions, and how they impact your income
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    FinBuddy can now explain your tax situation in plain language! Try asking:
+                  </p>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">•</span>
+                      <span>"Explain my tax slabs based on my income"</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">•</span>
+                      <span>"How much tax do I pay in each slab?"</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">•</span>
+                      <span>"What deductions can lower my tax?"</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">•</span>
+                      <span>"Should I choose old or new tax regime?"</span>
+                    </li>
+                  </ul>
+                  <Button 
+                    onClick={() => document.querySelector<HTMLElement>('[data-finbuddy-button]')?.click()}
+                    className="mt-4 w-full"
+                    variant="outline"
+                  >
+                    Open Tax Planner Chat
+                  </Button>
+                </CardContent>
+              </Card>
+            </ParallaxSection>
           </TabsContent>
 
-          <TabsContent value="goals" className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Financial Goals</h2>
-                <p className="text-muted-foreground">Set targets and track your progress toward financial milestones</p>
+          <TabsContent value="goals" className="space-y-6">
+            <ParallaxSection fadeIn speed={0.08}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">Financial Goals</h2>
+                  <p className="text-muted-foreground">Set targets and track your progress toward financial milestones</p>
+                </div>
               </div>
-            </div>
-            <GoalsTracker />
+            </ParallaxSection>
+            <ParallaxSection fadeIn speed={0.12} delay={100}>
+              <GoalsTracker />
+            </ParallaxSection>
           </TabsContent>
 
-          <TabsContent value="bills" className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Bill Management</h2>
-                <p className="text-muted-foreground">Never miss a payment with smart reminders and tracking</p>
+          <TabsContent value="bills" className="space-y-6">
+            <ParallaxSection fadeIn speed={0.08}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">Bill Management</h2>
+                  <p className="text-muted-foreground">Never miss a payment with smart reminders and tracking</p>
+                </div>
               </div>
-            </div>
-            <BillReminders />
+            </ParallaxSection>
+            <ParallaxSection fadeIn speed={0.12} delay={100}>
+              <BillReminders />
+            </ParallaxSection>
           </TabsContent>
 
-          <TabsContent value="achievements" className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Achievements & Rewards</h2>
-                <p className="text-muted-foreground">Earn points and unlock badges for reaching financial milestones</p>
+          <TabsContent value="achievements" className="space-y-6">
+            <ParallaxSection fadeIn speed={0.08}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">Achievements & Rewards</h2>
+                  <p className="text-muted-foreground">Earn points and unlock badges for reaching financial milestones</p>
+                </div>
               </div>
-            </div>
-            <Achievements />
+            </ParallaxSection>
+            <ParallaxSection fadeIn speed={0.12} delay={100}>
+              <Achievements />
+            </ParallaxSection>
           </TabsContent>
         </Tabs>
 
         {/* Donation Section */}
-        <div className="mt-12">
+        <ParallaxSection fadeIn speed={0.1} delay={200} className="mt-12">
           <DonationSection />
-        </div>
+        </ParallaxSection>
       </div>
 
       {/* Footer */}
