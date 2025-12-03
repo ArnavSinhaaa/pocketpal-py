@@ -51,27 +51,43 @@ serve(async (req) => {
       ? debts.reduce((sum, d) => sum + (Number(d.interest_rate) * Number(d.outstanding_amount)), 0) / totalDebt
       : 0;
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const GOOGLE_AI_KEY = Deno.env.get('GOOGLE_AI_KEY');
+    if (!GOOGLE_AI_KEY) {
+      throw new Error('GOOGLE_AI_KEY is not configured');
     }
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a CA-level debt management specialist. Analyze debt portfolios and create detailed payoff strategies.'
-          },
-          {
-            role: 'user',
-            content: `Analyze my debt portfolio and create elimination strategies:
+    const systemPrompt = `You are a CA-level debt management specialist. Analyze debt portfolios and create detailed payoff strategies.
+
+Format your response as JSON:
+{
+  "snowballStrategy": {
+    "payoffOrder": [{"debtType": "string", "lender": "string", "amount": number, "monthsToPayoff": number, "totalInterest": number}],
+    "totalMonths": number,
+    "totalInterest": number,
+    "description": "string"
+  },
+  "avalancheStrategy": {
+    "payoffOrder": [{"debtType": "string", "lender": "string", "amount": number, "monthsToPayoff": number, "totalInterest": number}],
+    "totalMonths": number,
+    "totalInterest": number,
+    "description": "string"
+  },
+  "interestSavings": {
+    "snowballVsMinimum": number,
+    "avalancheVsMinimum": number,
+    "avalancheVsSnowball": number
+  },
+  "acceleratedPayoff": [{"extraPaymentPercent": number, "extraMonthlyAmount": number, "newPayoffMonths": number, "interestSaved": number, "timeReduction": "string"}],
+  "recommendations": {
+    "immediate": ["string"],
+    "strategy": ["string"],
+    "longTerm": ["string"]
+  },
+  "milestones": [{"milestone": "string", "targetDate": "string", "amountPaid": number}],
+  "summary": "string"
+}`;
+
+    const userPrompt = `Analyze my debt portfolio and create elimination strategies:
 
 Debt Summary:
 - Total Debt: ₹${totalDebt.toLocaleString('en-IN')}
@@ -92,120 +108,27 @@ Create debt snowball and avalanche strategies with:
 2. Projected payoff timeline
 3. Interest savings comparison
 4. Accelerated payoff options (extra 10%, 20%, 30% payment)
-5. Debt-free milestone timeline`
-          }
-        ],
-        tools: [{
-          type: 'function',
-          function: {
-            name: 'analyze_debt_strategy',
-            description: 'Provide comprehensive debt elimination strategies',
-            parameters: {
-              type: 'object',
-              properties: {
-                snowballStrategy: {
-                  type: 'object',
-                  properties: {
-                    payoffOrder: {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        properties: {
-                          debtType: { type: 'string' },
-                          lender: { type: 'string' },
-                          amount: { type: 'number' },
-                          monthsToPayoff: { type: 'number' },
-                          totalInterest: { type: 'number' }
-                        },
-                        required: ['debtType', 'lender', 'amount', 'monthsToPayoff', 'totalInterest']
-                      }
-                    },
-                    totalMonths: { type: 'number' },
-                    totalInterest: { type: 'number' },
-                    description: { type: 'string' }
-                  },
-                  required: ['payoffOrder', 'totalMonths', 'totalInterest', 'description']
-                },
-                avalancheStrategy: {
-                  type: 'object',
-                  properties: {
-                    payoffOrder: {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        properties: {
-                          debtType: { type: 'string' },
-                          lender: { type: 'string' },
-                          amount: { type: 'number' },
-                          monthsToPayoff: { type: 'number' },
-                          totalInterest: { type: 'number' }
-                        },
-                        required: ['debtType', 'lender', 'amount', 'monthsToPayoff', 'totalInterest']
-                      }
-                    },
-                    totalMonths: { type: 'number' },
-                    totalInterest: { type: 'number' },
-                    description: { type: 'string' }
-                  },
-                  required: ['payoffOrder', 'totalMonths', 'totalInterest', 'description']
-                },
-                interestSavings: {
-                  type: 'object',
-                  properties: {
-                    snowballVsMinimum: { type: 'number' },
-                    avalancheVsMinimum: { type: 'number' },
-                    avalancheVsSnowball: { type: 'number' }
-                  },
-                  required: ['snowballVsMinimum', 'avalancheVsMinimum', 'avalancheVsSnowball']
-                },
-                acceleratedPayoff: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      extraPaymentPercent: { type: 'number' },
-                      extraMonthlyAmount: { type: 'number' },
-                      newPayoffMonths: { type: 'number' },
-                      interestSaved: { type: 'number' },
-                      timeReduction: { type: 'string' }
-                    },
-                    required: ['extraPaymentPercent', 'extraMonthlyAmount', 'newPayoffMonths', 'interestSaved', 'timeReduction']
-                  }
-                },
-                recommendations: {
-                  type: 'object',
-                  properties: {
-                    immediate: { type: 'array', items: { type: 'string' } },
-                    strategy: { type: 'array', items: { type: 'string' } },
-                    longTerm: { type: 'array', items: { type: 'string' } }
-                  },
-                  required: ['immediate', 'strategy', 'longTerm']
-                },
-                milestones: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      milestone: { type: 'string' },
-                      targetDate: { type: 'string' },
-                      amountPaid: { type: 'number' }
-                    },
-                    required: ['milestone', 'targetDate', 'amountPaid']
-                  }
-                },
-                summary: { type: 'string' }
-              },
-              required: ['snowballStrategy', 'avalancheStrategy', 'interestSavings', 'acceleratedPayoff', 'recommendations', 'milestones', 'summary']
-            }
-          }
+5. Debt-free milestone timeline`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
         }],
-        tool_choice: { type: 'function', function: { name: 'analyze_debt_strategy' } }
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 4096,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      console.error('Google AI error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
@@ -213,24 +136,20 @@ Create debt snowball and avalanche strategies with:
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
       throw new Error('AI service error');
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    if (!toolCall || !toolCall.function?.arguments) {
-      console.error('No tool call in response:', JSON.stringify(data));
-      throw new Error('AI did not return structured data');
+    let jsonContent = content;
+    if (content.includes('```json')) {
+      jsonContent = content.split('```json')[1].split('```')[0].trim();
+    } else if (content.includes('```')) {
+      jsonContent = content.split('```')[1].split('```')[0].trim();
     }
     
-    const analysisData = JSON.parse(toolCall.function.arguments);
+    const analysisData = JSON.parse(jsonContent);
 
     const enrichedData = {
       ...analysisData,

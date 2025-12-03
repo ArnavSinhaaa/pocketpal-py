@@ -89,23 +89,12 @@ serve(async (req) => {
       return sum;
     }, 0);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const GOOGLE_AI_KEY = Deno.env.get('GOOGLE_AI_KEY');
+    if (!GOOGLE_AI_KEY) {
+      throw new Error('GOOGLE_AI_KEY is not configured');
     }
- 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert financial advisor specializing in budget optimization. Analyze spending patterns and create optimal budgets using the 50/30/20 rule as a guideline (50% needs, 30% wants, 20% savings/goals), but adjust based on user's specific situation.
+
+    const systemPrompt = `You are an expert financial advisor specializing in budget optimization. Analyze spending patterns and create optimal budgets using the 50/30/20 rule as a guideline (50% needs, 30% wants, 20% savings/goals), but adjust based on user's specific situation.
 
 Your task:
 1. Analyze current spending by category
@@ -129,11 +118,9 @@ Format response as JSON:
   "recommendations": ["detailed rec1", "detailed rec2", ...],
   "quickWins": ["easy win1", "easy win2", ...],
   "summary": "plain language summary of the optimized budget"
-}`
-          },
-          {
-            role: 'user',
-            content: `Create an optimized budget for me:
+}`;
+
+    const userPrompt = `Create an optimized budget for me:
 
 Monthly Income: ₹${totalMonthlyIncome.toLocaleString('en-IN')}
 Current Monthly Spending: ₹${totalSpending.toLocaleString('en-IN')}
@@ -146,25 +133,31 @@ ${Object.entries(categorySpending)
 
 Active Financial Goals: ${goals.length}
 
-Please create an optimized budget that helps me save more while maintaining a good quality of life. Prioritize my financial goals and identify quick wins.`
-          }
-        ],
+Please create an optimized budget that helps me save more while maintaining a good quality of life. Prioritize my financial goals and identify quick wins.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      console.error('Google AI error:', response.status, errorText);
       
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
           status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required' }), {
-          status: 402,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -179,7 +172,7 @@ Please create an optimized budget that helps me save more while maintaining a go
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     let jsonContent = content;
     if (content.includes('```json')) {
