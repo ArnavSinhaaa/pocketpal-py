@@ -42,7 +42,6 @@ serve(async (req) => {
 
     const investmentsList = investments || [];
     
-    // Calculate portfolio metrics
     const totalInvested = investmentsList.reduce((sum, inv) => 
       sum + (Number(inv.purchase_price) * Number(inv.quantity)), 0
     );
@@ -54,7 +53,6 @@ serve(async (req) => {
     const totalReturns = totalCurrentValue - totalInvested;
     const returnsPercentage = totalInvested > 0 ? (totalReturns / totalInvested) * 100 : 0;
     
-    // Group by type and category
     const byType: Record<string, number> = {};
     const byCategory: Record<string, number> = {};
     
@@ -66,58 +64,39 @@ serve(async (req) => {
       }
     });
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const GOOGLE_AI_KEY = Deno.env.get('GOOGLE_AI_KEY');
+    if (!GOOGLE_AI_KEY) {
+      throw new Error('GOOGLE_AI_KEY is not configured');
     }
- 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert investment portfolio analyst with CA-level expertise. Analyze investment portfolios and provide comprehensive insights on:
-- Portfolio diversification and risk assessment
-- Asset allocation recommendations
-- Performance analysis and benchmarking
-- Tax efficiency strategies
-- Rebalancing suggestions
-- Growth opportunities
+
+    const systemPrompt = `You are an expert investment portfolio analyst. Analyze portfolios and provide comprehensive insights.
 
 Format response as JSON:
 {
-  "overallScore": number (0-100),
-  "diversificationScore": number (0-100),
+  "overallScore": number,
+  "diversificationScore": number,
   "riskLevel": "low|moderate|high|very_high",
   "performanceRating": "excellent|good|average|poor",
   "analysis": {
-    "strengths": ["strength1", "strength2", ...],
-    "concerns": ["concern1", "concern2", ...],
-    "opportunities": ["opportunity1", "opportunity2", ...]
+    "strengths": ["string"],
+    "concerns": ["string"],
+    "opportunities": ["string"]
   },
   "recommendations": {
-    "immediate": ["action1", "action2"],
-    "shortTerm": ["action1", "action2"],
-    "longTerm": ["action1", "action2"]
+    "immediate": ["string"],
+    "shortTerm": ["string"],
+    "longTerm": ["string"]
   },
   "assetAllocationAdvice": {
-    "current": "description",
-    "ideal": "description",
-    "rebalancing": ["suggestion1", "suggestion2"]
+    "current": "string",
+    "ideal": "string",
+    "rebalancing": ["string"]
   },
-  "taxOptimization": ["tip1", "tip2", ...],
-  "summary": "comprehensive analysis summary"
-}`
-          },
-          {
-            role: 'user',
-            content: `Analyze my investment portfolio:
+  "taxOptimization": ["string"],
+  "summary": "string"
+}`;
+
+    const userPrompt = `Analyze my investment portfolio:
 
 Portfolio Summary:
 - Total Invested: ₹${totalInvested.toLocaleString('en-IN')}
@@ -128,12 +107,12 @@ Number of Holdings: ${investmentsList.length}
 
 By Investment Type:
 ${Object.entries(byType).map(([type, value]) => 
-  `- ${type}: ₹${value.toLocaleString('en-IN')} (${((value/totalCurrentValue)*100).toFixed(1)}%)`
+  `- ${type}: ₹${value.toLocaleString('en-IN')} (${totalCurrentValue > 0 ? ((value/totalCurrentValue)*100).toFixed(1) : 0}%)`
 ).join('\n')}
 
 By Category:
 ${Object.entries(byCategory).map(([cat, value]) => 
-  `- ${cat}: ₹${value.toLocaleString('en-IN')} (${((value/totalCurrentValue)*100).toFixed(1)}%)`
+  `- ${cat}: ₹${value.toLocaleString('en-IN')} (${totalCurrentValue > 0 ? ((value/totalCurrentValue)*100).toFixed(1) : 0}%)`
 ).join('\n')}
 
 Individual Holdings:
@@ -145,15 +124,27 @@ ${investmentsList.map(inv => {
   return `- ${inv.name} (${inv.investment_type}): Invested ₹${invested.toLocaleString('en-IN')}, Current ₹${current.toLocaleString('en-IN')}, Returns ${returnsPct.toFixed(1)}%`;
 }).join('\n')}
 
-Provide a comprehensive CA-level portfolio analysis with actionable recommendations.`
-          }
-        ],
+Provide a comprehensive CA-level portfolio analysis with actionable recommendations.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      console.error('Google AI error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
@@ -161,24 +152,14 @@ Provide a comprehensive CA-level portfolio analysis with actionable recommendati
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      return new Response(JSON.stringify({ 
-        error: 'AI service error', 
-        details: errorText,
-        status: response.status 
-      }), {
+      return new Response(JSON.stringify({ error: 'AI service error', details: errorText }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     let jsonContent = content;
     if (content.includes('```json')) {

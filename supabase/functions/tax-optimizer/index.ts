@@ -51,17 +51,14 @@ serve(async (req) => {
 
     const annualSalary = Number(profile?.annual_salary || 0);
     
-    // Calculate claimed deductions by type
     const deductionsByType: Record<string, number> = {};
     deductions.forEach(ded => {
       deductionsByType[ded.deduction_type] = (deductionsByType[ded.deduction_type] || 0) + Number(ded.amount);
     });
 
-    // Check for potential deductions from expenses
     const medicalExpenses = expenses.filter(e => e.category === 'Healthcare' || e.category === 'Medical').reduce((sum, e) => sum + Number(e.amount), 0);
     const educationExpenses = expenses.filter(e => e.category === 'Education').reduce((sum, e) => sum + Number(e.amount), 0);
     
-    // Home loan interest from liabilities
     const homeLoanInterest = liabilities
       .filter(l => l.liability_type === 'home_loan')
       .reduce((sum, l) => {
@@ -69,31 +66,12 @@ serve(async (req) => {
         return sum + (monthlyInterest * 12);
       }, 0);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const GOOGLE_AI_KEY = Deno.env.get('GOOGLE_AI_KEY');
+    if (!GOOGLE_AI_KEY) {
+      throw new Error('GOOGLE_AI_KEY is not configured');
     }
- 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a CA-level tax optimization expert for India. Analyze tax situations and provide comprehensive tax-saving strategies covering:
-- Section 80C (₹1.5L limit): PPF, ELSS, EPF, Life Insurance, Home Loan Principal
-- Section 80D: Health Insurance premiums
-- Section 80CCD(1B): Additional NPS deduction (₹50K)
-- Section 24: Home Loan Interest (₹2L limit)
-- HRA exemption calculations
-- Standard deduction (₹50K for salaried)
-- Tax regime comparison (Old vs New)
-- Investment strategies for tax efficiency
+
+    const systemPrompt = `You are a CA-level tax optimization expert for India.
 
 Format response as JSON:
 {
@@ -101,40 +79,26 @@ Format response as JSON:
   "potentialSavings": number,
   "effectiveTaxRate": number,
   "recommendations": {
-    "immediate": [{"action": "desc", "savings": number, "effort": "low|medium|high"}],
-    "shortTerm": [{"action": "desc", "savings": number, "effort": "low|medium|high"}],
-    "longTerm": [{"action": "desc", "savings": number, "effort": "low|medium|high"}]
+    "immediate": [{"action": "string", "savings": number, "effort": "low|medium|high"}],
+    "shortTerm": [{"action": "string", "savings": number, "effort": "low|medium|high"}],
+    "longTerm": [{"action": "string", "savings": number, "effort": "low|medium|high"}]
   },
   "deductionOpportunities": [
-    {
-      "section": "80C|80D|etc",
-      "description": "what it covers",
-      "limit": number,
-      "utilized": number,
-      "available": number,
-      "howToClaim": "specific steps"
-    }
+    {"section": "string", "description": "string", "limit": number, "utilized": number, "available": number, "howToClaim": "string"}
   ],
   "regimeComparison": {
-    "oldRegime": {"tax": number, "pros": ["..."], "cons": ["..."]},
-    "newRegime": {"tax": number, "pros": ["..."], "cons": ["..."]},
-    "recommendation": "old|new with reasoning"
+    "oldRegime": {"tax": number, "pros": ["string"], "cons": ["string"]},
+    "newRegime": {"tax": number, "pros": ["string"], "cons": ["string"]},
+    "recommendation": "string"
   },
   "investmentSuggestions": [
-    {
-      "instrument": "ELSS|PPF|NPS|etc",
-      "amount": number,
-      "taxBenefit": number,
-      "additionalBenefits": "..."
-    }
+    {"instrument": "string", "amount": number, "taxBenefit": number, "additionalBenefits": "string"}
   ],
-  "quickWins": ["easy action1", "easy action2"],
-  "summary": "comprehensive tax optimization summary"
-}`
-          },
-          {
-            role: 'user',
-            content: `Provide comprehensive tax optimization analysis:
+  "quickWins": ["string"],
+  "summary": "string"
+}`;
+
+    const userPrompt = `Provide comprehensive tax optimization analysis:
 
 Income Details:
 - Annual Salary: ₹${annualSalary.toLocaleString('en-IN')}
@@ -153,15 +117,27 @@ Investment Portfolio Value: ₹${investments.reduce((sum, inv) => sum + Number(i
 
 Liabilities: ${liabilities.length} loans/debts
 
-Provide a CA-level tax optimization strategy with specific, actionable recommendations for maximizing tax savings under Indian tax laws.`
-          }
-        ],
+Provide a CA-level tax optimization strategy with specific, actionable recommendations.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 4096,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      console.error('Google AI error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
@@ -169,24 +145,14 @@ Provide a CA-level tax optimization strategy with specific, actionable recommend
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      return new Response(JSON.stringify({ 
-        error: 'AI service error', 
-        details: errorText,
-        status: response.status 
-      }), {
+      return new Response(JSON.stringify({ error: 'AI service error', details: errorText }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     let jsonContent = content;
     if (content.includes('```json')) {

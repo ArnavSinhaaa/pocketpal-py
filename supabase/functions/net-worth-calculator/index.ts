@@ -47,7 +47,6 @@ serve(async (req) => {
     const liabilities = liabilitiesRes.data || [];
     const goals = goalsRes.data || [];
 
-    // Calculate totals
     const totalInvestments = investments.reduce((sum, inv) => sum + Number(inv.current_value || 0), 0);
     const totalAssets = assets.reduce((sum, asset) => sum + Number(asset.current_value), 0);
     const totalLiabilities = liabilities.reduce((sum, lib) => sum + Number(lib.outstanding_amount), 0);
@@ -55,42 +54,52 @@ serve(async (req) => {
     const totalAssetValue = totalInvestments + totalAssets;
     const netWorth = totalAssetValue - totalLiabilities;
     
-    // Asset breakdown
-    const assetBreakdown: Record<string, number> = {
-      investments: totalInvestments,
-    };
-    
+    const assetBreakdown: Record<string, number> = { investments: totalInvestments };
     assets.forEach(asset => {
       assetBreakdown[asset.asset_type] = (assetBreakdown[asset.asset_type] || 0) + Number(asset.current_value);
     });
     
-    // Liability breakdown
     const liabilityBreakdown: Record<string, number> = {};
     liabilities.forEach(lib => {
       liabilityBreakdown[lib.liability_type] = (liabilityBreakdown[lib.liability_type] || 0) + Number(lib.outstanding_amount);
     });
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const GOOGLE_AI_KEY = Deno.env.get('GOOGLE_AI_KEY');
+    if (!GOOGLE_AI_KEY) {
+      throw new Error('GOOGLE_AI_KEY is not configured');
     }
- 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a CA-level wealth management analyst. Analyze net worth data and provide expert financial insights.'
-          },
-          {
-            role: 'user',
-            content: `Analyze my complete net worth:
+
+    const systemPrompt = `You are a CA-level wealth management analyst. Analyze net worth data and provide expert financial insights.
+
+Format response as JSON:
+{
+  "financialRatios": {
+    "debtToAssetRatio": number,
+    "liquidityRatio": number,
+    "solvencyRatio": number,
+    "interpretation": "string"
+  },
+  "wealthGrade": "A+|A|B|C|D",
+  "analysis": {
+    "strengths": ["string"],
+    "concerns": ["string"],
+    "opportunities": ["string"]
+  },
+  "netWorthGrowthPlan": {
+    "shortTerm": {"target": number, "timeframe": "string", "actions": ["string"]},
+    "mediumTerm": {"target": number, "timeframe": "string", "actions": ["string"]},
+    "longTerm": {"target": number, "timeframe": "string", "actions": ["string"]}
+  },
+  "recommendations": {
+    "assetOptimization": ["string"],
+    "debtManagement": ["string"],
+    "wealthBuilding": ["string"]
+  },
+  "milestones": [{"milestone": "string", "targetAmount": number, "estimatedTimeframe": "string"}],
+  "summary": "string"
+}`;
+
+    const userPrompt = `Analyze my complete net worth:
 
 Net Worth Summary:
 - Total Assets: ₹${totalAssetValue.toLocaleString('en-IN')}
@@ -104,109 +113,32 @@ ${Object.entries(assetBreakdown).map(([type, value]) =>
 
 Liability Breakdown:
 ${Object.entries(liabilityBreakdown).map(([type, value]) => 
-  `- ${type}: ₹${value.toLocaleString('en-IN')} (${((value/totalLiabilities)*100).toFixed(1)}%)`
+  `- ${type}: ₹${value.toLocaleString('en-IN')} (${totalLiabilities > 0 ? ((value/totalLiabilities)*100).toFixed(1) : 0}%)`
 ).join('\n')}
 
 Financial Goals: ${goals.length} active goals totaling ₹${goals.reduce((sum, g) => sum + Number(g.target_amount), 0).toLocaleString('en-IN')}
 
-Provide a CA-level net worth analysis with specific strategies to optimize wealth and achieve financial independence.`
-          }
-        ],
-        tools: [{
-          type: 'function',
-          function: {
-            name: 'analyze_net_worth',
-            description: 'Provide comprehensive net worth analysis with financial ratios and recommendations',
-            parameters: {
-              type: 'object',
-              properties: {
-                financialRatios: {
-                  type: 'object',
-                  properties: {
-                    debtToAssetRatio: { type: 'number' },
-                    liquidityRatio: { type: 'number' },
-                    solvencyRatio: { type: 'number' },
-                    interpretation: { type: 'string' }
-                  },
-                  required: ['debtToAssetRatio', 'liquidityRatio', 'solvencyRatio', 'interpretation']
-                },
-                wealthGrade: { type: 'string', enum: ['A+', 'A', 'B', 'C', 'D'] },
-                analysis: {
-                  type: 'object',
-                  properties: {
-                    strengths: { type: 'array', items: { type: 'string' } },
-                    concerns: { type: 'array', items: { type: 'string' } },
-                    opportunities: { type: 'array', items: { type: 'string' } }
-                  },
-                  required: ['strengths', 'concerns', 'opportunities']
-                },
-                netWorthGrowthPlan: {
-                  type: 'object',
-                  properties: {
-                    shortTerm: {
-                      type: 'object',
-                      properties: {
-                        target: { type: 'number' },
-                        timeframe: { type: 'string' },
-                        actions: { type: 'array', items: { type: 'string' } }
-                      },
-                      required: ['target', 'timeframe', 'actions']
-                    },
-                    mediumTerm: {
-                      type: 'object',
-                      properties: {
-                        target: { type: 'number' },
-                        timeframe: { type: 'string' },
-                        actions: { type: 'array', items: { type: 'string' } }
-                      },
-                      required: ['target', 'timeframe', 'actions']
-                    },
-                    longTerm: {
-                      type: 'object',
-                      properties: {
-                        target: { type: 'number' },
-                        timeframe: { type: 'string' },
-                        actions: { type: 'array', items: { type: 'string' } }
-                      },
-                      required: ['target', 'timeframe', 'actions']
-                    }
-                  },
-                  required: ['shortTerm', 'mediumTerm', 'longTerm']
-                },
-                recommendations: {
-                  type: 'object',
-                  properties: {
-                    assetOptimization: { type: 'array', items: { type: 'string' } },
-                    debtManagement: { type: 'array', items: { type: 'string' } },
-                    wealthBuilding: { type: 'array', items: { type: 'string' } }
-                  },
-                  required: ['assetOptimization', 'debtManagement', 'wealthBuilding']
-                },
-                milestones: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      milestone: { type: 'string' },
-                      targetAmount: { type: 'number' },
-                      estimatedTimeframe: { type: 'string' }
-                    },
-                    required: ['milestone', 'targetAmount', 'estimatedTimeframe']
-                  }
-                },
-                summary: { type: 'string' }
-              },
-              required: ['financialRatios', 'wealthGrade', 'analysis', 'netWorthGrowthPlan', 'recommendations', 'milestones', 'summary']
-            }
-          }
+Provide a CA-level net worth analysis with specific strategies to optimize wealth.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
         }],
-        tool_choice: { type: 'function', function: { name: 'analyze_net_worth' } }
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 4096,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      console.error('Google AI error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
@@ -214,33 +146,24 @@ Provide a CA-level net worth analysis with specific strategies to optimize wealt
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      return new Response(JSON.stringify({ 
-        error: 'AI service error', 
-        details: errorText,
-        status: response.status 
-      }), {
+      return new Response(JSON.stringify({ error: 'AI service error', details: errorText }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    if (!toolCall || !toolCall.function?.arguments) {
-      console.error('No tool call in response:', JSON.stringify(data));
-      throw new Error('AI did not return structured data');
+    let jsonContent = content;
+    if (content.includes('```json')) {
+      jsonContent = content.split('```json')[1].split('```')[0].trim();
+    } else if (content.includes('```')) {
+      jsonContent = content.split('```')[1].split('```')[0].trim();
     }
     
-    const analysisData = JSON.parse(toolCall.function.arguments);
+    const analysisData = JSON.parse(jsonContent);
 
-    // Add actual values to response
     const enrichedData = {
       ...analysisData,
       actualValues: {

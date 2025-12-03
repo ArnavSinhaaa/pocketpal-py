@@ -37,7 +37,6 @@ serve(async (req) => {
 
     const { timeframe = 3, whatIfScenario } = await req.json();
 
-    // Fetch historical data
     const [expensesRes, indirectIncomeRes, profileRes] = await Promise.all([
       supabase.from('expenses').select('*').eq('user_id', user.id).order('date', { ascending: true }),
       supabase.from('indirect_income_sources').select('*').eq('user_id', user.id),
@@ -48,10 +47,9 @@ serve(async (req) => {
     const indirectIncome = indirectIncomeRes.data || [];
     const profile = profileRes.data;
 
-    // Group expenses by month
     const monthlyData: Record<string, { expenses: number; count: number }> = {};
     expenses.forEach(exp => {
-      const monthKey = exp.date.substring(0, 7); // YYYY-MM
+      const monthKey = exp.date.substring(0, 7);
       if (!monthlyData[monthKey]) {
         monthlyData[monthKey] = { expenses: 0, count: 0 };
       }
@@ -59,7 +57,6 @@ serve(async (req) => {
       monthlyData[monthKey].count += 1;
     });
 
-    // Calculate total indirect income per month
     const monthlyIndirectIncome = indirectIncome.reduce((sum, src) => {
       const amount = Number(src.amount);
       switch (src.frequency) {
@@ -75,7 +72,6 @@ serve(async (req) => {
     const monthlySalary = profile?.annual_salary ? Number(profile.annual_salary) / 12 : 0;
     let totalMonthlyIncome = monthlySalary + monthlyIndirectIncome;
 
-    // Apply what-if scenario if provided
     let scenarioDescription = '';
     if (whatIfScenario) {
       if (whatIfScenario.additionalIncome) {
@@ -93,53 +89,29 @@ serve(async (req) => {
       .map(([month, data]) => `${month}: ₹${data.expenses.toLocaleString('en-IN')} (${data.count} expenses)`)
       .join('\n');
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const GOOGLE_AI_KEY = Deno.env.get('GOOGLE_AI_KEY');
+    if (!GOOGLE_AI_KEY) {
+      throw new Error('GOOGLE_AI_KEY is not configured');
     }
- 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a financial forecasting expert specializing in income prediction using regression analysis. Analyze historical data and provide accurate predictions.
 
-Your task:
-1. Analyze the user's historical expense patterns and income data
-2. Use regression analysis to identify trends
-3. Predict next ${timeframe} month(s)' income and expenses with confidence intervals
-4. Provide confidence levels (high/medium/low) and trend analysis (growth/decline/stable)
-5. Suggest actionable strategies to increase income or optimize expenses
-6. Detect any anomalies or concerning patterns
+    const systemPrompt = `You are a financial forecasting expert. Analyze historical data and provide accurate predictions.
 
-Format your response as JSON with this structure:
+Format your response as JSON:
 {
   "forecast": {
-    ${timeframe >= 1 ? '"month1": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },' : ''}
-    ${timeframe >= 2 ? '"month2": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },' : ''}
-    ${timeframe >= 3 ? '"month3": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },' : ''}
-    ${timeframe >= 4 ? '"month4": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },' : ''}
-    ${timeframe >= 5 ? '"month5": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },' : ''}
-    ${timeframe >= 6 ? '"month6": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number }' : ''}
+    "month1": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },
+    "month2": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number },
+    "month3": { "income": number, "expenses": number, "savings": number, "confidenceLow": number, "confidenceHigh": number }
   },
   "trend": "growth|decline|stable",
   "confidence": "high|medium|low",
   "summary": "Plain language summary of the forecast",
-  "insights": ["insight1", "insight2", ...],
-  "recommendations": ["actionable rec1", "actionable rec2", ...],
-  "alerts": ["alert1 if any concerning patterns detected"]
-}`
-          },
-          {
-            role: 'user',
-            content: `Analyze my financial data and forecast next ${timeframe} month(s):
+  "insights": ["insight1", "insight2"],
+  "recommendations": ["rec1", "rec2"],
+  "alerts": ["alert if any"]
+}`;
+
+    const userPrompt = `Analyze my financial data and forecast next ${timeframe} month(s):
 
 Historical Monthly Expenses:
 ${historicalSummary}
@@ -151,15 +123,27 @@ ${scenarioDescription}
 
 Total months of data: ${Object.keys(monthlyData).length}
 
-Please provide a ${timeframe}-month forecast using regression on the expense trends. Include confidence intervals (±10-20% based on data volatility), identify the overall trend (growth/decline/stable), detect any anomalies, and provide actionable recommendations to optimize finances.`
-          }
-        ],
+Provide a ${timeframe}-month forecast with confidence intervals and actionable recommendations.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      console.error('Google AI error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
@@ -167,26 +151,15 @@ Please provide a ${timeframe}-month forecast using regression on the expense tre
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      return new Response(JSON.stringify({ 
-        error: 'AI service error', 
-        details: errorText,
-        status: response.status 
-      }), {
+      return new Response(JSON.stringify({ error: 'AI service error', details: errorText }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    // Extract JSON from markdown code blocks if present
     let jsonContent = content;
     if (content.includes('```json')) {
       jsonContent = content.split('```json')[1].split('```')[0].trim();
