@@ -82,25 +82,14 @@ serve(async (req) => {
     const activeGoals = goals.length;
     const completedGoals = goals.filter(g => Number(g.current_amount) >= Number(g.target_amount)).length;
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
+    const GOOGLE_AI_KEY = Deno.env.get('GOOGLE_AI_KEY');
+    if (!GOOGLE_AI_KEY) {
+      throw new Error('GOOGLE_AI_KEY is not configured');
     }
     
-    console.log('Calling OpenAI API for financial health analysis...');
- 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a comprehensive financial health analyst. Calculate a detailed financial health score (0-100) based on multiple factors:
+    console.log('Calling Google Gemini API for financial health analysis...');
+
+    const systemPrompt = `You are a comprehensive financial health analyst. Calculate a detailed financial health score (0-100) based on multiple factors:
 - Savings Rate (30 points): >20% excellent, 10-20% good, <10% poor
 - Expense Management (25 points): Spending vs income ratio
 - Financial Goals Progress (20 points): Active goals and completion rate
@@ -127,11 +116,9 @@ Format response as JSON:
     "longTerm": ["action1", "action2"]
   },
   "summary": "personalized summary of financial health"
-}`
-          },
-          {
-            role: 'user',
-            content: `Analyze my complete financial health:
+}`;
+
+    const userPrompt = `Analyze my complete financial health:
 
 Income & Expenses:
 - Monthly Income: ₹${totalMonthlyIncome.toLocaleString('en-IN')}
@@ -150,25 +137,31 @@ Financial Consistency:
 
 Total Expenses in Database: ${expenses.length}
 
-Provide a comprehensive financial health assessment with a score out of 100 and actionable improvement plan.`
-          }
-        ],
+Provide a comprehensive financial health assessment with a score out of 100 and actionable improvement plan.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_AI_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      console.error('Google AI error:', response.status, errorText);
       
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
           status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required' }), {
-          status: 402,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -183,7 +176,7 @@ Provide a comprehensive financial health assessment with a score out of 100 and 
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     let jsonContent = content;
     if (content.includes('```json')) {
