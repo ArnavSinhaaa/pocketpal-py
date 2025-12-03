@@ -348,10 +348,16 @@ export const DebtManagement = () => {
         </div>
 
         {debts.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium">No debts tracked</p>
-            <p className="text-sm text-muted-foreground">Add debts to get AI-powered payoff strategies</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20">
+            <Calculator className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-lg font-medium mb-2">Start Managing Your Debt</p>
+            <p className="text-sm text-muted-foreground mb-6 max-w-md">
+              Add your loans and credit cards to get AI-powered payoff strategies, compare Snowball vs Avalanche methods, and see exactly how to become debt-free faster.
+            </p>
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Your First Debt
+            </Button>
           </div>
         )}
 
