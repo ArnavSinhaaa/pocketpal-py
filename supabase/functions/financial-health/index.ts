@@ -82,10 +82,13 @@ serve(async (req) => {
     const activeGoals = goals.length;
     const completedGoals = goals.filter(g => Number(g.current_amount) >= Number(g.target_amount)).length;
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    // Try LOVABLE_API_KEY first, fallback to LOVABLE_API_KEY_1
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY') || Deno.env.get('LOVABLE_API_KEY_1');
     if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+      throw new Error('No Lovable API key configured');
     }
+    
+    console.log('Using Lovable API key to call AI gateway...');
  
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
