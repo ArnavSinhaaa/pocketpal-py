@@ -2,12 +2,42 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+    
+    <!-- PWA & Mobile Optimization -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FinMG" />
+    <meta name="application-name" content="FinMG" />
+    <meta name="theme-color" content="#7C3AED" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#A78BFA" media="(prefers-color-scheme: dark)" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-TileColor" content="#7C3AED" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    
+    <!-- Safe Area for notched devices -->
+    <style>
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sar: env(safe-area-inset-right);
+        --sab: env(safe-area-inset-bottom);
+        --sal: env(safe-area-inset-left);
+      }
+      body {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+    </style>
+    
     <title>FinMG | Smart Finance Manager</title>
     <meta name="description" content="FinMG - Your smart personal finance manager. Track expenses, set goals, and achieve financial success with gamified rewards.">
     <meta name="author" content="FinMG" />
     <link rel="canonical" href="/" />
-    <link rel="icon" type="image/x-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/5O8OHnwp8IVCXKb6OiwlBAFywak1/uploads/1760950030280-ChatGPT Image Oct 20, 2025, 02_11_39 PM.png">
+    
+    <!-- Favicons & App Icons -->
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <link rel="mask-icon" href="/favicon.png" color="#7C3AED" />
 
     <!-- Fonts - Preconnect and DNS prefetch for faster loading -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />

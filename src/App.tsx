@@ -31,6 +31,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 // Lazy-loaded Pages for code splitting
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
+const Install = lazy(() => import("./pages/Install"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading fallback component
@@ -88,8 +89,9 @@ const App = () => (
           <BrowserRouter>
             <Suspense fallback={<PageLoader />}>
               <Routes>
-                {/* Public route: Anyone can access */}
+                {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/install" element={<Install />} />
                 
                 {/* Protected route: Requires authentication */}
                 <Route path="/" element={
@@ -97,11 +99,6 @@ const App = () => (
                     <Index />
                   </ProtectedRoute>
                 } />
-                
-                {/* 
-                  IMPORTANT: Add new routes HERE, ABOVE the catch-all route 
-                  Example: <Route path="/settings" element={<Settings />} />
-                */}
                 
                 {/* Catch-all route: Must be last! Handles 404s */}
                 <Route path="*" element={<NotFound />} />
