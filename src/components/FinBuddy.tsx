@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Send, X, MessageCircle, Volume2, VolumeX } from 'lucide-react';
+import { Bot, Send, X, MessageCircle, Volume2, VolumeX, Sparkles, TrendingUp, Wallet, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -13,12 +13,18 @@ type Message = {
   content: string;
 };
 
+const quickPrompts = [
+  { icon: TrendingUp, label: 'Analyze spending', prompt: 'Analyze my spending patterns and suggest improvements' },
+  { icon: Wallet, label: 'Save tax', prompt: 'How can I save more tax this financial year?' },
+  { icon: Target, label: 'Goal advice', prompt: 'Help me plan to reach my financial goals faster' },
+];
+
 export function FinBuddy() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "👋 Hi! I'm FinBuddy, your personal finance assistant! I'm here to help you track expenses, manage your budget, and reach your financial goals. How can I help you today?"
+      content: "👋 Namaste! I'm FinBuddy, your personal finance expert!\n\nI can help you with:\n• 📊 Analyzing your spending patterns\n• 💰 Tax-saving strategies (80C, 80D, NPS)\n• 📈 Investment recommendations\n• 🎯 Achieving your financial goals\n\nHow can I help you today?"
     }
   ]);
   const [input, setInput] = useState('');
@@ -55,9 +61,7 @@ export function FinBuddy() {
         if (error.message?.includes('Rate limit')) {
           toast({ title: 'Voice rate limit', description: 'Try again later.', variant: 'destructive' });
         } else if (error.message?.includes('credits')) {
-          toast({ title: '⚠️ Credits Low', description: 'ElevenLabs credits running low. Please top up.', variant: 'destructive' });
-        } else if (error.message?.includes('API key')) {
-          toast({ title: 'Voice error', description: 'Configuration issue.', variant: 'destructive' });
+          toast({ title: '⚠️ Credits Low', description: 'ElevenLabs credits running low.', variant: 'destructive' });
         }
         return;
       }
@@ -102,13 +106,13 @@ export function FinBuddy() {
       stopAudio();
     }
     setIsAudioEnabled(!isAudioEnabled);
-    toast({ title: isAudioEnabled ? 'Voice disabled' : 'Voice enabled' });
+    toast({ title: isAudioEnabled ? '🔇 Voice disabled' : '🔊 Voice enabled' });
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  const sendMessage = async (messageText?: string) => {
+    const userMessage = (messageText || input).trim();
+    if (!userMessage || isLoading) return;
 
-    const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
@@ -126,7 +130,7 @@ export function FinBuddy() {
       }
 
       const response = await fetch(
-        `https://tbsgqvrfoljyjciflosl.supabase.co/functions/v1/finbuddy-chat`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/finbuddy-chat`,
         {
           method: 'POST',
           headers: {
@@ -162,7 +166,6 @@ export function FinBuddy() {
       let assistantMessage = '';
       let textBuffer = '';
 
-      // Add empty assistant message to update incrementally
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
       while (true) {
@@ -203,7 +206,6 @@ export function FinBuddy() {
         }
       }
 
-      // Play audio for the complete response
       if (assistantMessage) {
         await playAudio(assistantMessage);
       }
@@ -216,30 +218,74 @@ export function FinBuddy() {
         description: error instanceof Error ? error.message : 'Failed to send message',
         variant: 'destructive',
       });
-      setMessages(prev => prev.slice(0, -1)); // Remove empty assistant message
+      setMessages(prev => prev.slice(0, -1));
       setIsLoading(false);
     }
   };
 
+  const formatMessage = (content: string) => {
+    // Convert markdown-like formatting to styled elements
+    return content.split('\n').map((line, i) => {
+      // Handle bullet points
+      if (line.startsWith('• ') || line.startsWith('- ')) {
+        return (
+          <div key={i} className="flex items-start gap-2 my-1">
+            <span className="text-primary mt-0.5">•</span>
+            <span>{line.slice(2)}</span>
+          </div>
+        );
+      }
+      // Handle numbered lists
+      if (/^\d+\.\s/.test(line)) {
+        return (
+          <div key={i} className="flex items-start gap-2 my-1">
+            <span className="text-primary font-medium">{line.match(/^\d+/)?.[0]}.</span>
+            <span>{line.replace(/^\d+\.\s/, '')}</span>
+          </div>
+        );
+      }
+      // Handle bold text **text**
+      if (line.includes('**')) {
+        const parts = line.split(/\*\*(.*?)\*\*/g);
+        return (
+          <p key={i} className={line ? 'my-1' : 'my-2'}>
+            {parts.map((part, j) => 
+              j % 2 === 1 ? <strong key={j} className="text-primary font-semibold">{part}</strong> : part
+            )}
+          </p>
+        );
+      }
+      return <p key={i} className={line ? 'my-1' : 'my-2'}>{line}</p>;
+    });
+  };
+
   return (
     <>
-      {/* Floating chat button */}
+      {/* Floating chat button with pulse animation */}
       <AnimatePresence>
         {!isOpen && (
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            exit={{ scale: 0, rotate: 180 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
             className="fixed bottom-6 right-6 z-50"
           >
-            <Button
-              onClick={() => setIsOpen(true)}
-              className="h-14 w-14 rounded-full shadow-glow bg-gradient-primary hover:scale-110 transition-transform"
-              size="icon"
-              data-finbuddy-button
-            >
-              <MessageCircle className="h-6 w-6 text-white" />
-            </Button>
+            <div className="relative">
+              {/* Pulse ring */}
+              <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
+              <Button
+                onClick={() => setIsOpen(true)}
+                className="relative h-16 w-16 rounded-full shadow-glow bg-gradient-to-br from-primary via-primary to-primary/80 hover:scale-110 transition-all duration-300 border-2 border-primary-foreground/20"
+                size="icon"
+                data-finbuddy-button
+              >
+                <div className="flex flex-col items-center">
+                  <Sparkles className="h-5 w-5 text-white mb-0.5" />
+                  <span className="text-[10px] font-bold text-white">FinBuddy</span>
+                </div>
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -248,29 +294,44 @@ export function FinBuddy() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-3rem)]"
+            initial={{ opacity: 0, scale: 0.8, y: 100 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 100 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-3rem)]"
           >
-            <Card className="shadow-elegant border-2 border-primary/20">
-              <CardHeader className="bg-gradient-primary text-white rounded-t-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Bot className="h-6 w-6" />
-                    <CardTitle className="text-white">
-                      FinBuddy
-                      {isSpeaking && (
-                        <span className="text-xs ml-2 animate-pulse">Speaking...</span>
-                      )}
-                    </CardTitle>
+            <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-b from-card to-card/95 backdrop-blur-xl">
+              {/* Header with gradient */}
+              <CardHeader className="bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground p-4 relative overflow-hidden">
+                {/* Decorative elements */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12" />
+                
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="h-11 w-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30">
+                        <Bot className="h-6 w-6 text-white" />
+                      </div>
+                      {/* Online indicator */}
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-green-400 rounded-full border-2 border-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                        FinBuddy
+                        <Sparkles className="h-4 w-4 text-yellow-300" />
+                      </h3>
+                      <p className="text-xs text-white/80">
+                        {isSpeaking ? '🔊 Speaking...' : isLoading ? '💭 Thinking...' : '🟢 Online'}
+                      </p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={toggleAudio}
-                      className="text-white hover:bg-white/20"
+                      className="text-white hover:bg-white/20 h-9 w-9"
                       title={isAudioEnabled ? 'Disable voice' : 'Enable voice'}
                     >
                       {isAudioEnabled ? (
@@ -283,48 +344,105 @@ export function FinBuddy() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setIsOpen(false)}
-                      className="text-white hover:bg-white/20"
+                      className="text-white hover:bg-white/20 h-9 w-9"
                     >
                       <X className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
               </CardHeader>
+
               <CardContent className="p-0">
-                <ScrollArea className="h-96 p-4" ref={scrollRef}>
+                {/* Messages area */}
+                <ScrollArea className="h-[380px] px-4 py-3" ref={scrollRef}>
                   <div className="space-y-4">
                     {messages.map((message, index) => (
                       <motion.div
                         key={index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ delay: index * 0.05 }}
                         className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
+                        {message.role === 'assistant' && (
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 mt-1 flex-shrink-0">
+                            <Bot className="h-4 w-4 text-primary" />
+                          </div>
+                        )}
                         <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
+                          className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm ${
                             message.role === 'user'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
+                              ? 'bg-primary text-primary-foreground rounded-br-md'
+                              : 'bg-muted/80 border border-border/50 rounded-bl-md'
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          <div className="text-sm leading-relaxed">
+                            {message.role === 'assistant' 
+                              ? formatMessage(message.content)
+                              : message.content
+                            }
+                          </div>
                         </div>
                       </motion.div>
                     ))}
-                    {isLoading && (
-                      <div className="flex justify-start">
-                        <div className="bg-muted rounded-lg p-3">
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    
+                    {/* Loading indicator */}
+                    {isLoading && messages[messages.length - 1]?.content === '' && (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex justify-start"
+                      >
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 mt-1">
+                          <Bot className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="bg-muted/80 border border-border/50 rounded-2xl rounded-bl-md px-5 py-4">
+                          <div className="flex gap-1.5">
+                            <motion.div
+                              className="w-2.5 h-2.5 bg-primary/60 rounded-full"
+                              animate={{ y: [0, -8, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                            />
+                            <motion.div
+                              className="w-2.5 h-2.5 bg-primary/60 rounded-full"
+                              animate={{ y: [0, -8, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.15 }}
+                            />
+                            <motion.div
+                              className="w-2.5 h-2.5 bg-primary/60 rounded-full"
+                              animate={{ y: [0, -8, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.3 }}
+                            />
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     )}
                   </div>
                 </ScrollArea>
-                <div className="p-4 border-t">
+
+                {/* Quick prompts */}
+                {messages.length === 1 && !isLoading && (
+                  <div className="px-4 pb-3 border-t border-border/50 bg-muted/30">
+                    <p className="text-xs text-muted-foreground mb-2 mt-3">Quick actions:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {quickPrompts.map((qp, i) => (
+                        <Button
+                          key={i}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => sendMessage(qp.prompt)}
+                          className="text-xs h-8 rounded-full hover:bg-primary/10 hover:border-primary/50 transition-all"
+                        >
+                          <qp.icon className="h-3 w-3 mr-1.5" />
+                          {qp.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Input area */}
+                <div className="p-4 border-t border-border/50 bg-background/80">
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -335,14 +453,22 @@ export function FinBuddy() {
                     <Input
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder="Ask FinBuddy anything..."
+                      placeholder="Ask about expenses, taxes, investments..."
                       disabled={isLoading}
-                      className="flex-1"
+                      className="flex-1 rounded-full border-muted-foreground/20 focus:border-primary/50 bg-muted/50"
                     />
-                    <Button type="submit" disabled={isLoading || !input.trim()} size="icon">
+                    <Button 
+                      type="submit" 
+                      disabled={isLoading || !input.trim()} 
+                      size="icon"
+                      className="rounded-full h-10 w-10 bg-primary hover:bg-primary/90 shadow-md"
+                    >
                       <Send className="h-4 w-4" />
                     </Button>
                   </form>
+                  <p className="text-[10px] text-muted-foreground text-center mt-2">
+                    Powered by AI • Your data stays private
+                  </p>
                 </div>
               </CardContent>
             </Card>
