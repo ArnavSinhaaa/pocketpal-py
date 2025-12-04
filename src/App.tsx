@@ -10,6 +10,8 @@
  * components, hooks, or contexts - not here!
  */
 
+import { lazy, Suspense } from "react";
+
 // UI Components for notifications and tooltips
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -26,10 +28,17 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
-// Pages
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
+// Lazy-loaded Pages for code splitting
+const Index = lazy(() => import("./pages/Index"));
+const Auth = lazy(() => import("./pages/Auth"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
 /**
  * QueryClient Configuration
@@ -77,25 +86,27 @@ const App = () => (
           
           {/* Router: Manages all page navigation */}
           <BrowserRouter>
-            <Routes>
-              {/* Public route: Anyone can access */}
-              <Route path="/auth" element={<Auth />} />
-              
-              {/* Protected route: Requires authentication */}
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              } />
-              
-              {/* 
-                IMPORTANT: Add new routes HERE, ABOVE the catch-all route 
-                Example: <Route path="/settings" element={<Settings />} />
-              */}
-              
-              {/* Catch-all route: Must be last! Handles 404s */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Public route: Anyone can access */}
+                <Route path="/auth" element={<Auth />} />
+                
+                {/* Protected route: Requires authentication */}
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                } />
+                
+                {/* 
+                  IMPORTANT: Add new routes HERE, ABOVE the catch-all route 
+                  Example: <Route path="/settings" element={<Settings />} />
+                */}
+                
+                {/* Catch-all route: Must be last! Handles 404s */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
