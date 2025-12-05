@@ -188,7 +188,8 @@ export function FinBuddy() {
 
           try {
             const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
+            // Handle Gemini SSE format
+            const content = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
             if (content) {
               assistantMessage += content;
               setMessages(prev => {

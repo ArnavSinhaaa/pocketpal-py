@@ -130,10 +130,10 @@ GAMIFICATION STATS:
 === END OF FINANCIAL DATA ===
 `;
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      console.error('No OpenAI API key found');
-      throw new Error('OPENAI_API_KEY is not configured');
+    const GOOGLE_AI_KEY = Deno.env.get('GOOGLE_AI_KEY');
+    if (!GOOGLE_AI_KEY) {
+      console.error('No Google AI key found');
+      throw new Error('GOOGLE_AI_KEY is not configured');
     }
 
     const systemPrompt = `You are FinBuddy, an expert AI-powered personal finance assistant specifically designed for Indian users. You combine the expertise of a Chartered Accountant, Financial Planner, and friendly advisor.
@@ -187,26 +187,31 @@ ${contextMessage}
 - Celebrate their wins (streaks, goal progress, good savings rate)
 - Be encouraging but honest about areas needing improvement`;
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages.map((m: any) => ({ role: m.role, content: m.content }))
-        ],
-        stream: true,
-        max_tokens: 1024,
-      }),
-    });
+    // Build conversation for Gemini
+    const geminiContents = messages.map((m: any) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GOOGLE_AI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: geminiContents,
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          generationConfig: {
+            maxOutputTokens: 1024,
+            temperature: 0.7,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI error:', response.status, errorText);
+      console.error('Gemini API error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
