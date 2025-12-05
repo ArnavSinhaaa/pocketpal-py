@@ -57,16 +57,39 @@ serve(async (req) => {
     }
 
     /**
-     * CREDIT OPTIMIZATION: Limit text length
+     * CREDIT OPTIMIZATION: Limit text length and sanitize Unicode
      * 
      * ElevenLabs charges per character. To save credits:
      * - Maximum 500 characters per request (adjust as needed)
-     * - Remove emojis which count as characters
+     * - Remove emojis which count as characters and can cause encoding issues
      * - Truncate smartly at sentence boundaries
      */
     const MAX_CHARS = 500; // Adjust this to control costs
+    
+    // Comprehensive emoji and special character removal
     let optimizedText = text
-      .replace(/[👋💪🇮🇳]/g, '') // Remove emojis
+      // Remove all emojis and symbols (comprehensive regex)
+      .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Emoticons
+      .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // Misc Symbols and Pictographs
+      .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // Transport and Map
+      .replace(/[\u{1F700}-\u{1F77F}]/gu, '') // Alchemical Symbols
+      .replace(/[\u{1F780}-\u{1F7FF}]/gu, '') // Geometric Shapes Extended
+      .replace(/[\u{1F800}-\u{1F8FF}]/gu, '') // Supplemental Arrows-C
+      .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // Supplemental Symbols and Pictographs
+      .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '') // Chess Symbols
+      .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '') // Symbols and Pictographs Extended-A
+      .replace(/[\u{2600}-\u{26FF}]/gu, '') // Misc symbols
+      .replace(/[\u{2700}-\u{27BF}]/gu, '') // Dingbats
+      .replace(/[\u{FE00}-\u{FE0F}]/gu, '') // Variation Selectors
+      .replace(/[\u{1F000}-\u{1F02F}]/gu, '') // Mahjong Tiles
+      .replace(/[\u{1F0A0}-\u{1F0FF}]/gu, '') // Playing Cards
+      .replace(/[\u{200D}]/gu, '') // Zero Width Joiner
+      .replace(/[\u{20E3}]/gu, '') // Combining Enclosing Keycap
+      .replace(/[\u{FE0F}]/gu, '') // Variation Selector-16
+      // Remove any remaining non-printable or surrogate characters
+      .replace(/[\uD800-\uDFFF]/g, '') // Remove surrogate pairs
+      .replace(/[^\x20-\x7E\u00A0-\u00FF\u0100-\u017F\u0900-\u097F₹•–—''""…\n\r\t]/g, '') // Keep basic Latin, extended Latin, Devanagari, rupee, bullets
+      .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
 
     if (optimizedText.length > MAX_CHARS) {
