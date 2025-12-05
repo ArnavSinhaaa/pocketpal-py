@@ -3,10 +3,73 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Send, X, MessageCircle, Volume2, VolumeX, Sparkles, TrendingUp, Wallet, Target } from 'lucide-react';
+import { Bot, Send, X, Volume2, VolumeX, Sparkles, TrendingUp, Wallet, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { FinBuddyMascot, useMascotInteraction } from './FinBuddyMascot';
+
+/** 
+ * Reusable button component with cute mascot
+ * Can be customized with different labels
+ */
+function FinBuddyButton({ onClick, label = 'FinBuddy' }: { onClick: () => void; label?: string }) {
+  const buttonRef = useRef<HTMLDivElement>(null);
+  const { isHovered, isClicked, mousePosition } = useMascotInteraction(buttonRef);
+
+  return (
+    <motion.div
+      initial={{ scale: 0, rotate: -180 }}
+      animate={{ scale: 1, rotate: 0 }}
+      exit={{ scale: 0, rotate: 180 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+      className="fixed bottom-6 right-6 z-50"
+    >
+      <div 
+        ref={buttonRef}
+        className="relative cursor-pointer"
+        onClick={onClick}
+      >
+        {/* Mascot sitting above the button */}
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+          <FinBuddyMascot
+            size={36}
+            isHovered={isHovered}
+            isClicked={isClicked}
+            mousePosition={mousePosition}
+          />
+        </div>
+
+        {/* Pulse ring */}
+        <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
+        
+        {/* Main button */}
+        <motion.div
+          className="relative h-16 w-16 rounded-full shadow-glow bg-gradient-to-br from-primary via-primary to-primary/80 border-2 border-primary-foreground/20 flex items-center justify-center"
+          animate={{
+            scale: isClicked ? 0.95 : isHovered ? 1.1 : 1,
+            y: isHovered ? -2 : 0,
+          }}
+          transition={{
+            type: 'spring',
+            stiffness: 400,
+            damping: 17,
+          }}
+          style={{
+            boxShadow: isHovered 
+              ? '0 8px 30px rgba(124, 58, 237, 0.5), 0 4px 15px rgba(124, 58, 237, 0.3)'
+              : '0 4px 15px rgba(124, 58, 237, 0.3)',
+          }}
+        >
+          <div className="flex flex-col items-center">
+            <Sparkles className="h-5 w-5 text-white mb-0.5" />
+            <span className="text-[10px] font-bold text-white">{label}</span>
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
 
 type Message = {
   role: 'user' | 'assistant';
@@ -262,32 +325,10 @@ export function FinBuddy() {
 
   return (
     <>
-      {/* Floating chat button with pulse animation */}
+      {/* Floating chat button with mascot */}
       <AnimatePresence>
         {!isOpen && (
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            exit={{ scale: 0, rotate: 180 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-            className="fixed bottom-6 right-6 z-50"
-          >
-            <div className="relative">
-              {/* Pulse ring */}
-              <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
-              <Button
-                onClick={() => setIsOpen(true)}
-                className="relative h-16 w-16 rounded-full shadow-glow bg-gradient-to-br from-primary via-primary to-primary/80 hover:scale-110 transition-all duration-300 border-2 border-primary-foreground/20"
-                size="icon"
-                data-finbuddy-button
-              >
-                <div className="flex flex-col items-center">
-                  <Sparkles className="h-5 w-5 text-white mb-0.5" />
-                  <span className="text-[10px] font-bold text-white">FinBuddy</span>
-                </div>
-              </Button>
-            </div>
-          </motion.div>
+          <FinBuddyButton onClick={() => setIsOpen(true)} />
         )}
       </AnimatePresence>
 
