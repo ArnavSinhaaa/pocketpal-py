@@ -13,45 +13,94 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const googleApiKey = Deno.env.get('GOOGLE_AI_KEY')!;
 
-    const authHeader = req.headers.get('Authorization')!;
-    const supabase = createClient(supabaseUrl, supabaseKey, {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'No authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error('Auth error:', authError);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    const [profileRes, expensesRes, investmentsRes, assetsRes, goalsRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('user_id', user.id).single(),
+    console.log('Fetching data for user:', user.id);
+
+    const [profileRes, expensesRes, investmentsRes, assetsRes, goalsRes, indirectIncomeRes] = await Promise.all([
+      supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('expenses').select('*').eq('user_id', user.id),
       supabase.from('investments').select('*').eq('user_id', user.id),
       supabase.from('assets').select('*').eq('user_id', user.id),
-      supabase.from('financial_goals').select('*').eq('user_id', user.id)
+      supabase.from('financial_goals').select('*').eq('user_id', user.id),
+      supabase.from('indirect_income_sources').select('*').eq('user_id', user.id)
     ]);
+
+    console.log('Profile:', profileRes.data, 'Error:', profileRes.error);
+    console.log('Expenses count:', expensesRes.data?.length, 'Error:', expensesRes.error);
 
     const profile = profileRes.data;
     const expenses = expensesRes.data || [];
     const investments = investmentsRes.data || [];
     const assets = assetsRes.data || [];
     const goals = goalsRes.data || [];
+    const indirectIncome = indirectIncomeRes.data || [];
 
     const annualSalary = Number(profile?.annual_salary || 0);
-    const monthlyExpenses = expenses
-      .filter(e => {
-        const expenseDate = new Date(e.date);
-        const oneMonthAgo = new Date();
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        return expenseDate >= oneMonthAgo;
-      })
-      .reduce((sum, e) => sum + Number(e.amount), 0);
+    
+    // Calculate monthly expenses - use actual expense data or estimate from income
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    
+    const recentExpenses = expenses.filter(e => new Date(e.date) >= threeMonthsAgo);
+    const totalRecentExpenses = recentExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+    
+    // Calculate monthly average based on actual expense data timespan
+    let monthlyExpenses = 0;
+    if (recentExpenses.length > 0) {
+      // Find the earliest and latest expense dates
+      const expenseDates = recentExpenses.map(e => new Date(e.date).getTime());
+      const earliestExpense = Math.min(...expenseDates);
+      const latestExpense = Math.max(...expenseDates);
+      
+      // Calculate months spanning the data (minimum 1 month)
+      const daySpan = (latestExpense - earliestExpense) / (24 * 60 * 60 * 1000);
+      const monthsSpan = Math.max(1, Math.ceil(daySpan / 30));
+      
+      monthlyExpenses = totalRecentExpenses / monthsSpan;
+      console.log(`Expense span: ${daySpan.toFixed(0)} days (${monthsSpan} months), Total: ₹${totalRecentExpenses}, Monthly avg: ₹${monthlyExpenses.toFixed(0)}`);
+    } else if (annualSalary > 0) {
+      // Estimate monthly expenses as 60% of monthly income if no expense data
+      monthlyExpenses = (annualSalary / 12) * 0.6;
+      console.log(`No expenses found, estimating from salary: ₹${monthlyExpenses.toFixed(0)}/month`);
+    }
+    
+    // Calculate monthly indirect income
+    const monthlyIndirectIncome = indirectIncome.reduce((sum, src) => {
+      const amount = Number(src.amount);
+      switch (src.frequency) {
+        case 'daily': return sum + (amount * 30);
+        case 'weekly': return sum + (amount * 4);
+        case 'monthly': return sum + amount;
+        case 'quarterly': return sum + (amount / 3);
+        case 'yearly': return sum + (amount / 12);
+        default: return sum + amount;
+      }
+    }, 0);
+
+    console.log('Calculated values - Salary:', annualSalary, 'Monthly Expenses:', monthlyExpenses, 'Indirect Income:', monthlyIndirectIncome);
 
     const totalInvestments = investments.reduce((sum, inv) => 
       sum + (Number(inv.current_value) || Number(inv.purchase_price) * Number(inv.quantity)), 0
@@ -146,15 +195,23 @@ Provide specific, actionable recommendations.`;
 
     const analysis = JSON.parse(jsonContent);
 
+    // Calculate total monthly income including indirect sources
+    const totalMonthlyIncome = (annualSalary / 12) + monthlyIndirectIncome;
+    const monthlySavingCapacity = totalMonthlyIncome - monthlyExpenses;
+
     const enrichedAnalysis = {
       ...analysis,
       currentFinancials: {
         annualSalary,
         monthlyExpenses,
         currentSavings,
-        monthlySavingCapacity: (annualSalary / 12) - monthlyExpenses
+        monthlyIndirectIncome,
+        totalMonthlyIncome,
+        monthlySavingCapacity: monthlySavingCapacity > 0 ? monthlySavingCapacity : 0
       }
     };
+
+    console.log('Returning enriched analysis with financials:', enrichedAnalysis.currentFinancials);
 
     return new Response(JSON.stringify(enrichedAnalysis), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

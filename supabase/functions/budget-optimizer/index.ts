@@ -50,18 +50,37 @@ serve(async (req) => {
 
     // Calculate category-wise spending
     const categorySpending: Record<string, number> = {};
-    const last30DaysExpenses = expenses.filter(exp => {
-      const expDate = new Date(exp.date);
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return expDate >= thirtyDaysAgo;
-    });
+    
+    // Use last 3 months for better averaging
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    
+    const recentExpenses = expenses.filter(exp => new Date(exp.date) >= threeMonthsAgo);
+    
+    console.log(`Found ${recentExpenses.length} expenses in last 3 months out of ${expenses.length} total`);
 
-    last30DaysExpenses.forEach(exp => {
+    recentExpenses.forEach(exp => {
       categorySpending[exp.category] = (categorySpending[exp.category] || 0) + Number(exp.amount);
     });
 
-    const totalSpending = Object.values(categorySpending).reduce((sum, amt) => sum + amt, 0);
+    // Calculate actual months span from expense data
+    let monthsOfData = 1;
+    if (recentExpenses.length > 0) {
+      const expenseDates = recentExpenses.map(e => new Date(e.date).getTime());
+      const earliestExpense = Math.min(...expenseDates);
+      const latestExpense = Math.max(...expenseDates);
+      const daySpan = (latestExpense - earliestExpense) / (24 * 60 * 60 * 1000);
+      monthsOfData = Math.max(1, Math.ceil(daySpan / 30));
+    }
+
+    const monthlySpendingByCategory: Record<string, number> = {};
+    Object.entries(categorySpending).forEach(([cat, total]) => {
+      monthlySpendingByCategory[cat] = Math.round(total / monthsOfData);
+    });
+
+    const totalMonthlySpending = Object.values(monthlySpendingByCategory).reduce((sum, amt) => sum + amt, 0);
+    
+    console.log(`User data - Salary: ₹${profile?.annual_salary || 0}, Expenses: ${expenses.length}, Monthly spending: ₹${totalMonthlySpending}, Months span: ${monthsOfData}`);
 
     // Calculate monthly income
     const monthlyIndirectIncome = indirectIncome.reduce((sum, src) => {
@@ -123,17 +142,19 @@ Format response as JSON:
     const userPrompt = `Create an optimized budget for me:
 
 Monthly Income: ₹${totalMonthlyIncome.toLocaleString('en-IN')}
-Current Monthly Spending: ₹${totalSpending.toLocaleString('en-IN')}
+Current Monthly Spending: ₹${totalMonthlySpending.toLocaleString('en-IN')}
 Monthly Goal Contributions Needed: ₹${goalContributions.toLocaleString('en-IN')}
 
-Category-wise Spending (last 30 days):
-${Object.entries(categorySpending)
-  .map(([cat, amt]) => `- ${cat}: ₹${amt.toLocaleString('en-IN')} (${((amt/totalSpending)*100).toFixed(1)}%)`)
-  .join('\n')}
+Category-wise Monthly Spending (averaged over 3 months):
+${Object.entries(monthlySpendingByCategory)
+  .map(([cat, amt]) => `- ${cat}: ₹${amt.toLocaleString('en-IN')} (${totalMonthlySpending > 0 ? ((amt/totalMonthlySpending)*100).toFixed(1) : 0}%)`)
+  .join('\n') || '- No spending data available'}
 
 Active Financial Goals: ${goals.length}
 
-Please create an optimized budget that helps me save more while maintaining a good quality of life. Prioritize my financial goals and identify quick wins.`;
+${totalMonthlySpending === 0 && totalMonthlyIncome > 0 ? 
+  `Note: No expense data found. Please provide recommendations based on the 50/30/20 rule for an income of ₹${totalMonthlyIncome.toLocaleString('en-IN')}/month.` : 
+  'Please create an optimized budget that helps me save more while maintaining a good quality of life. Prioritize my financial goals and identify quick wins.'}`;
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_KEY}`, {
       method: 'POST',
