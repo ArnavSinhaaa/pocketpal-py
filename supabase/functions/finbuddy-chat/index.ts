@@ -130,10 +130,13 @@ GAMIFICATION STATS:
 === END OF FINANCIAL DATA ===
 `;
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    // Try primary key first, then fallback
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY_1') || Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
+      console.error('No Lovable API key found in environment');
       throw new Error('LOVABLE_API_KEY is not configured');
     }
+    console.log('Using Lovable API key:', LOVABLE_API_KEY ? 'Key found' : 'No key');
 
     const systemPrompt = `You are FinBuddy, an expert AI-powered personal finance assistant specifically designed for Indian users. You combine the expertise of a Chartered Accountant, Financial Planner, and friendly advisor.
 
