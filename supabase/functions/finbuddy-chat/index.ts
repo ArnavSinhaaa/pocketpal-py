@@ -130,13 +130,11 @@ GAMIFICATION STATS:
 === END OF FINANCIAL DATA ===
 `;
 
-    // Try primary key first, then fallback
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY_1') || Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      console.error('No Lovable API key found in environment');
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      console.error('No OpenAI API key found');
+      throw new Error('OPENAI_API_KEY is not configured');
     }
-    console.log('Using Lovable API key:', LOVABLE_API_KEY ? 'Key found' : 'No key');
 
     const systemPrompt = `You are FinBuddy, an expert AI-powered personal finance assistant specifically designed for Indian users. You combine the expertise of a Chartered Accountant, Financial Planner, and friendly advisor.
 
@@ -189,27 +187,26 @@ ${contextMessage}
 - Celebrate their wins (streaks, goal progress, good savings rate)
 - Be encouraging but honest about areas needing improvement`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           ...messages.map((m: any) => ({ role: m.role, content: m.content }))
         ],
         stream: true,
-        temperature: 0.7,
         max_tokens: 1024,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
+      console.error('OpenAI error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
