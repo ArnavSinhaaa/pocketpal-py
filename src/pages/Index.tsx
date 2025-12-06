@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,17 +32,40 @@ import { DebtManagement } from "@/components/ca-features/DebtManagement";
 import { RetirementPlanner } from "@/components/ca-features/RetirementPlanner";
 import { ParallaxSection, ScrollProgressBar } from "@/components/ParallaxSection";
 import { FloatingParticles } from "@/components/FloatingParticles";
+import { MobileNav } from "@/components/MobileNav";
+import { useSmoothScroll } from "@/hooks/useSmoothScroll";
 
 const Index = () => {
   const { user, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState("expenses");
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Enable smooth scrolling on desktop
+  useSmoothScroll({ smoothness: 0.08, mobileNative: true });
+
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Scroll to top on tab change for mobile
+    if (isMobile) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden relative">
-      <FloatingParticles count={30} />
+    <div className="min-h-screen bg-background overflow-x-hidden relative pb-20 md:pb-0">
+      <FloatingParticles count={isMobile ? 15 : 30} />
       <ScrollProgressBar />
       <FinBuddy />
       
@@ -87,42 +111,43 @@ const Index = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <Tabs defaultValue="expenses" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:grid-cols-5 bg-muted/50 p-1 rounded-lg">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          {/* Desktop tab list - hidden on mobile */}
+          <TabsList className="hidden md:grid w-full grid-cols-5 lg:w-auto lg:grid-cols-5 bg-muted/50 p-1 rounded-lg">
             <TabsTrigger 
               value="expenses" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Expenses</span>
+              <span>Expenses</span>
             </TabsTrigger>
             <TabsTrigger 
               value="insights" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <Lightbulb className="h-4 w-4" />
-              <span className="hidden sm:inline">AI Insights</span>
+              <span>AI Insights</span>
             </TabsTrigger>
             <TabsTrigger 
               value="goals" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <Target className="h-4 w-4" />
-              <span className="hidden sm:inline">Goals</span>
+              <span>Goals</span>
             </TabsTrigger>
             <TabsTrigger 
               value="bills" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <Bell className="h-4 w-4" />
-              <span className="hidden sm:inline">Bills</span>
+              <span>Bills</span>
             </TabsTrigger>
             <TabsTrigger 
               value="achievements" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <Trophy className="h-4 w-4" />
-              <span className="hidden sm:inline">Rewards</span>
+              <span>Rewards</span>
             </TabsTrigger>
           </TabsList>
 
@@ -288,6 +313,9 @@ const Index = () => {
 
       {/* Footer */}
       <Footer />
+
+      {/* Mobile bottom navigation */}
+      <MobileNav activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );
 };
