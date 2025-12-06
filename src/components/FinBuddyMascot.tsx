@@ -1,6 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+/** Chat state for mascot expressions */
+export type MascotExpression = 'idle' | 'thinking' | 'speaking' | 'happy';
+
 interface FinBuddyMascotProps {
   /** Size of the mascot in pixels */
   size?: number;
@@ -14,6 +17,8 @@ interface FinBuddyMascotProps {
   isClicked?: boolean;
   /** Mouse position relative to button center (-1 to 1 range) */
   mousePosition?: { x: number; y: number };
+  /** Current expression based on chat state */
+  expression?: MascotExpression;
 }
 
 /**
@@ -31,6 +36,7 @@ export function FinBuddyMascot({
   isHovered = false,
   isClicked = false,
   mousePosition = { x: 0, y: 0 },
+  expression = 'idle',
 }: FinBuddyMascotProps) {
   const [showSparkles, setShowSparkles] = useState(false);
 
@@ -203,17 +209,21 @@ export function FinBuddyMascot({
           transition={{ duration: 0.15, ease: 'easeOut' }}
         >
           {/* Left eye */}
-          <div
-            className="absolute rounded-full bg-white"
+          <motion.div
+            className="absolute rounded-full bg-white overflow-hidden"
             style={{
               width: size * 0.22,
-              height: size * 0.26,
+              height: expression === 'thinking' ? size * 0.18 : size * 0.26,
               left: '22%',
-              top: '28%',
+              top: expression === 'thinking' ? '32%' : '28%',
               boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
             }}
+            animate={expression === 'thinking' ? {
+              scaleY: [1, 0.7, 1],
+            } : {}}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           >
-            {/* Pupil - follows cursor */}
+            {/* Pupil - follows cursor, moves up when thinking */}
             <motion.div
               className="absolute rounded-full"
               style={{
@@ -224,8 +234,8 @@ export function FinBuddyMascot({
                 top: '50%',
               }}
               animate={{
-                x: -size * 0.06 + eyeOffsetX,
-                y: -size * 0.07 + eyeOffsetY,
+                x: -size * 0.06 + (expression === 'thinking' ? 2 : eyeOffsetX),
+                y: -size * 0.07 + (expression === 'thinking' ? -2 : eyeOffsetY),
               }}
               transition={{ duration: 0.1, ease: 'easeOut' }}
             >
@@ -240,20 +250,24 @@ export function FinBuddyMascot({
                 }}
               />
             </motion.div>
-          </div>
+          </motion.div>
 
           {/* Right eye */}
-          <div
-            className="absolute rounded-full bg-white"
+          <motion.div
+            className="absolute rounded-full bg-white overflow-hidden"
             style={{
               width: size * 0.22,
-              height: size * 0.26,
+              height: expression === 'thinking' ? size * 0.18 : size * 0.26,
               right: '22%',
-              top: '28%',
+              top: expression === 'thinking' ? '32%' : '28%',
               boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
             }}
+            animate={expression === 'thinking' ? {
+              scaleY: [1, 0.7, 1],
+            } : {}}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 0.1 }}
           >
-            {/* Pupil - follows cursor */}
+            {/* Pupil - follows cursor, moves up when thinking */}
             <motion.div
               className="absolute rounded-full"
               style={{
@@ -264,8 +278,8 @@ export function FinBuddyMascot({
                 top: '50%',
               }}
               animate={{
-                x: -size * 0.06 + eyeOffsetX,
-                y: -size * 0.07 + eyeOffsetY,
+                x: -size * 0.06 + (expression === 'thinking' ? 2 : eyeOffsetX),
+                y: -size * 0.07 + (expression === 'thinking' ? -2 : eyeOffsetY),
               }}
               transition={{ duration: 0.1, ease: 'easeOut' }}
             >
@@ -280,9 +294,9 @@ export function FinBuddyMascot({
                 }}
               />
             </motion.div>
-          </div>
+          </motion.div>
 
-          {/* Mouth - changes on click/hover */}
+          {/* Mouth - changes based on expression/click/hover */}
           <motion.div
             className="absolute"
             style={{
@@ -291,12 +305,11 @@ export function FinBuddyMascot({
               transform: 'translateX(-50%)',
             }}
           >
-            {isClicked ? (
-              // Happy open mouth on click
+            {isClicked || expression === 'happy' ? (
+              // Happy open mouth on click or happy expression
               <motion.div
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
-                className="rounded-full"
                 style={{
                   width: size * 0.2,
                   height: size * 0.15,
@@ -304,26 +317,65 @@ export function FinBuddyMascot({
                   borderRadius: '0 0 50% 50%',
                 }}
               />
+            ) : expression === 'speaking' ? (
+              // Animated speaking mouth
+              <motion.div
+                animate={{
+                  height: [size * 0.08, size * 0.14, size * 0.06, size * 0.12, size * 0.08],
+                  width: [size * 0.14, size * 0.16, size * 0.12, size * 0.18, size * 0.14],
+                }}
+                transition={{
+                  duration: 0.4,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+                style={{
+                  background: '#2D3748',
+                  borderRadius: '40%',
+                }}
+              />
+            ) : expression === 'thinking' ? (
+              // Thinking expression - pursed/wavy mouth
+              <motion.div
+                animate={{ x: [-1, 1, -1] }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  width: size * 0.1,
+                  height: size * 0.06,
+                  background: '#2D3748',
+                  borderRadius: '50%',
+                }}
+              />
             ) : isHovered ? (
-              // Smile on hover
-              <div
-                style={{
-                  width: size * 0.18,
-                  height: size * 0.08,
-                  borderBottom: `${size * 0.03}px solid #2D3748`,
-                  borderRadius: '0 0 50% 50%',
-                }}
-              />
+              // Big smile on hover
+              <svg
+                width={size * 0.22}
+                height={size * 0.12}
+                viewBox="0 0 22 12"
+              >
+                <path
+                  d="M2 4 Q11 14 20 4"
+                  stroke="#2D3748"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              </svg>
             ) : (
-              // Neutral small smile
-              <div
-                style={{
-                  width: size * 0.12,
-                  height: size * 0.05,
-                  borderBottom: `${size * 0.025}px solid #2D3748`,
-                  borderRadius: '0 0 40% 40%',
-                }}
-              />
+              // Default cute smile
+              <svg
+                width={size * 0.18}
+                height={size * 0.1}
+                viewBox="0 0 18 10"
+              >
+                <path
+                  d="M3 3 Q9 10 15 3"
+                  stroke="#2D3748"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              </svg>
             )}
           </motion.div>
         </motion.div>

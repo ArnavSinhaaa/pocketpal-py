@@ -7,13 +7,21 @@ import { Bot, Send, X, Volume2, VolumeX, Sparkles, TrendingUp, Wallet, Target } 
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FinBuddyMascot, useMascotInteraction } from './FinBuddyMascot';
+import { FinBuddyMascot, useMascotInteraction, type MascotExpression } from './FinBuddyMascot';
 
 /** 
  * Reusable button component with cute mascot
  * Can be customized with different labels
  */
-function FinBuddyButton({ onClick, label = 'FinBuddy' }: { onClick: () => void; label?: string }) {
+function FinBuddyButton({ 
+  onClick, 
+  label = 'FinBuddy',
+  expression = 'idle' 
+}: { 
+  onClick: () => void; 
+  label?: string;
+  expression?: MascotExpression;
+}) {
   const buttonRef = useRef<HTMLDivElement>(null);
   const { isHovered, isClicked, mousePosition } = useMascotInteraction(buttonRef);
 
@@ -37,6 +45,7 @@ function FinBuddyButton({ onClick, label = 'FinBuddy' }: { onClick: () => void; 
             isHovered={isHovered}
             isClicked={isClicked}
             mousePosition={mousePosition}
+            expression={expression}
           />
         </div>
 
@@ -323,12 +332,22 @@ export function FinBuddy() {
     });
   };
 
+  // Determine mascot expression based on chat state
+  const getMascotExpression = (): MascotExpression => {
+    if (isSpeaking) return 'speaking';
+    if (isLoading) return 'thinking';
+    return 'idle';
+  };
+
   return (
     <>
       {/* Floating chat button with mascot */}
       <AnimatePresence>
         {!isOpen && (
-          <FinBuddyButton onClick={() => setIsOpen(true)} />
+          <FinBuddyButton 
+            onClick={() => setIsOpen(true)} 
+            expression={getMascotExpression()}
+          />
         )}
       </AnimatePresence>
 
