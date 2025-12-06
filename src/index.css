@@ -244,10 +244,32 @@
    MOBILE & CROSS-PLATFORM STYLES
    ================================ */
 
-/* Smooth scrolling */
+/* Enhanced smooth scrolling */
 html {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.3) transparent;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
 }
 
 /* Prevent text selection on interactive elements */
@@ -344,4 +366,145 @@ body.pwa-mode {
   .app-header {
     padding-top: env(safe-area-inset-top, 20px);
   }
+}
+
+/* ================================
+   ADVANCED UI ANIMATIONS
+   ================================ */
+
+/* Magnetic button glow */
+.magnetic-glow {
+  position: relative;
+}
+
+.magnetic-glow::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  background: radial-gradient(circle, hsl(var(--primary) / 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.magnetic-glow:hover::after {
+  opacity: 1;
+}
+
+/* Scroll reveal animation */
+[data-scroll-animate] {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+[data-scroll-animate].animate-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Mobile touch feedback */
+@media (hover: none) and (pointer: coarse) {
+  .touch-feedback {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .touch-feedback::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--touch-x, 50%) var(--touch-y, 50%), 
+      hsl(var(--primary) / 0.2) 0%, 
+      transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  
+  .touch-feedback:active::after {
+    opacity: 1;
+  }
+}
+
+/* Floating action button for mobile */
+.fab-container {
+  position: fixed;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  right: 1.5rem;
+  z-index: 50;
+}
+
+/* Bottom sheet animation for mobile */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.bottom-sheet {
+  animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Pull to refresh indicator */
+.pull-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  transition: transform 0.2s ease;
+  z-index: 1000;
+}
+
+.pull-indicator.visible {
+  transform: translateX(-50%) translateY(20px);
+}
+
+/* Haptic feedback simulation for web */
+@keyframes haptic {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.98); }
+}
+
+.haptic-tap:active {
+  animation: haptic 0.1s ease;
+}
+
+/* Skeleton loading animation */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.skeleton-loading {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted-foreground) / 0.1) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Swipe gesture indicator */
+.swipe-hint {
+  position: relative;
+}
+
+.swipe-hint::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 32px;
+  height: 4px;
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 2px;
+  transform: translateX(-50%);
 }

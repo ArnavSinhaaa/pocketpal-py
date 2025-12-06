@@ -4,6 +4,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 /** Chat state for mascot expressions */
 export type MascotExpression = 'idle' | 'thinking' | 'speaking' | 'happy';
 
+/** Mascot customization options */
+interface MascotCustomization {
+  /** Show cheek blush */
+  showBlush?: boolean;
+  /** Show ears/antennae */
+  showEars?: boolean;
+  /** Eye style */
+  eyeStyle?: 'round' | 'cute' | 'sleepy';
+  /** Body shape */
+  bodyShape?: 'round' | 'blob' | 'square';
+  /** Enable blinking */
+  enableBlink?: boolean;
+  /** Blink interval in ms */
+  blinkInterval?: number;
+}
+
 interface FinBuddyMascotProps {
   /** Size of the mascot in pixels */
   size?: number;
@@ -19,15 +35,28 @@ interface FinBuddyMascotProps {
   mousePosition?: { x: number; y: number };
   /** Current expression based on chat state */
   expression?: MascotExpression;
+  /** Customization options */
+  customization?: MascotCustomization;
 }
+
+const defaultCustomization: MascotCustomization = {
+  showBlush: true,
+  showEars: true,
+  eyeStyle: 'cute',
+  bodyShape: 'blob',
+  enableBlink: true,
+  blinkInterval: 3500,
+};
 
 /**
  * Cute mascot character for the FinBuddy button
  * Features:
- * - Idle bobbing animation (CSS keyframes)
+ * - Idle bobbing animation
+ * - Natural blinking animation
  * - Eyes that follow cursor position
  * - Lean toward cursor on hover
  * - Joyful jump + sparkles on click
+ * - Multiple expressions (idle, thinking, speaking, happy)
  */
 export function FinBuddyMascot({
   size = 40,
@@ -37,8 +66,36 @@ export function FinBuddyMascot({
   isClicked = false,
   mousePosition = { x: 0, y: 0 },
   expression = 'idle',
+  customization = {},
 }: FinBuddyMascotProps) {
+  const config = { ...defaultCustomization, ...customization };
   const [showSparkles, setShowSparkles] = useState(false);
+  const [isBlinking, setIsBlinking] = useState(false);
+
+  // Natural blinking animation
+  useEffect(() => {
+    if (!config.enableBlink || expression === 'thinking') return;
+
+    const blink = () => {
+      setIsBlinking(true);
+      setTimeout(() => setIsBlinking(false), 150);
+    };
+
+    // Random blink interval for natural feel
+    const getRandomInterval = () => 
+      config.blinkInterval! + (Math.random() - 0.5) * 1500;
+
+    let timeoutId: NodeJS.Timeout;
+    const scheduleBlink = () => {
+      timeoutId = setTimeout(() => {
+        blink();
+        scheduleBlink();
+      }, getRandomInterval());
+    };
+
+    scheduleBlink();
+    return () => clearTimeout(timeoutId);
+  }, [config.enableBlink, config.blinkInterval, expression]);
 
   // Trigger sparkles on click
   useEffect(() => {
@@ -50,14 +107,26 @@ export function FinBuddyMascot({
   }, [isClicked]);
 
   // Calculate eye position based on mouse (limited range for cuteness)
-  // Max movement is 2px in any direction
   const eyeOffsetX = Math.max(-2, Math.min(2, mousePosition.x * 2));
   const eyeOffsetY = Math.max(-2, Math.min(2, mousePosition.y * 2));
 
-  // Calculate head tilt based on mouse position (subtle lean)
-  // Max rotation is 8 degrees
+  // Calculate head tilt based on mouse position
   const headRotation = isHovered ? mousePosition.x * 8 : 0;
   const headTiltY = isHovered ? mousePosition.y * 3 : 0;
+
+  // Eye height based on state
+  const getEyeHeight = () => {
+    if (isBlinking) return size * 0.06;
+    if (expression === 'thinking') return size * 0.18;
+    if (config.eyeStyle === 'sleepy') return size * 0.2;
+    return size * 0.26;
+  };
+
+  const bodyBorderRadius = config.bodyShape === 'round' 
+    ? '50%' 
+    : config.bodyShape === 'square' 
+      ? '30%' 
+      : '45% 45% 50% 50%';
 
   return (
     <div 
@@ -147,12 +216,13 @@ export function FinBuddyMascot({
           }
         />
 
-        {/* Main body (rounded blob shape) */}
+        {/* Main body (customizable shape) */}
         <div
-          className="absolute rounded-[45%_45%_50%_50%] overflow-hidden"
+          className="absolute overflow-hidden"
           style={{
             width: size,
             height: size * 0.9,
+            borderRadius: bodyBorderRadius,
             background: `linear-gradient(135deg, ${primaryColor} 0%, hsl(var(--primary) / 0.85) 100%)`,
             boxShadow: `
               0 4px 12px rgba(0,0,0,0.15),
@@ -162,29 +232,33 @@ export function FinBuddyMascot({
           }}
         >
           {/* Cheek blush (left) */}
-          <div
-            className="absolute rounded-full"
-            style={{
-              width: size * 0.18,
-              height: size * 0.1,
-              left: '12%',
-              top: '52%',
-              background: 'rgba(255,150,150,0.5)',
-              filter: 'blur(2px)',
-            }}
-          />
+          {config.showBlush && (
+            <div
+              className="absolute rounded-full"
+              style={{
+                width: size * 0.18,
+                height: size * 0.1,
+                left: '12%',
+                top: '52%',
+                background: 'rgba(255,150,150,0.5)',
+                filter: 'blur(2px)',
+              }}
+            />
+          )}
           {/* Cheek blush (right) */}
-          <div
-            className="absolute rounded-full"
-            style={{
-              width: size * 0.18,
-              height: size * 0.1,
-              right: '12%',
-              top: '52%',
-              background: 'rgba(255,150,150,0.5)',
-              filter: 'blur(2px)',
-            }}
-          />
+          {config.showBlush && (
+            <div
+              className="absolute rounded-full"
+              style={{
+                width: size * 0.18,
+                height: size * 0.1,
+                right: '12%',
+                top: '52%',
+                background: 'rgba(255,150,150,0.5)',
+                filter: 'blur(2px)',
+              }}
+            />
+          )}
 
           {/* Highlight shine */}
           <div
@@ -208,92 +282,102 @@ export function FinBuddyMascot({
           }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
         >
-          {/* Left eye */}
+          {/* Left eye with blinking */}
           <motion.div
             className="absolute rounded-full bg-white overflow-hidden"
             style={{
               width: size * 0.22,
-              height: expression === 'thinking' ? size * 0.18 : size * 0.26,
               left: '22%',
-              top: expression === 'thinking' ? '32%' : '28%',
+              top: isBlinking ? '34%' : (expression === 'thinking' ? '32%' : '28%'),
               boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
             }}
-            animate={expression === 'thinking' ? {
-              scaleY: [1, 0.7, 1],
-            } : {}}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            animate={{
+              height: getEyeHeight(),
+              scaleY: expression === 'thinking' && !isBlinking ? [1, 0.7, 1] : 1,
+            }}
+            transition={{ 
+              height: { duration: 0.1, ease: 'easeOut' },
+              scaleY: { duration: 2, repeat: Infinity, ease: 'easeInOut' }
+            }}
           >
-            {/* Pupil - follows cursor, moves up when thinking */}
-            <motion.div
-              className="absolute rounded-full"
-              style={{
-                width: size * 0.12,
-                height: size * 0.14,
-                background: '#2D3748',
-                left: '50%',
-                top: '50%',
-              }}
-              animate={{
-                x: -size * 0.06 + (expression === 'thinking' ? 2 : eyeOffsetX),
-                y: -size * 0.07 + (expression === 'thinking' ? -2 : eyeOffsetY),
-              }}
-              transition={{ duration: 0.1, ease: 'easeOut' }}
-            >
-              {/* Eye shine */}
-              <div
-                className="absolute rounded-full bg-white"
+            {/* Pupil - hidden when blinking */}
+            {!isBlinking && (
+              <motion.div
+                className="absolute rounded-full"
                 style={{
-                  width: size * 0.04,
-                  height: size * 0.04,
-                  left: '20%',
-                  top: '20%',
+                  width: size * 0.12,
+                  height: size * 0.14,
+                  background: '#2D3748',
+                  left: '50%',
+                  top: '50%',
                 }}
-              />
-            </motion.div>
+                animate={{
+                  x: -size * 0.06 + (expression === 'thinking' ? 2 : eyeOffsetX),
+                  y: -size * 0.07 + (expression === 'thinking' ? -2 : eyeOffsetY),
+                }}
+                transition={{ duration: 0.1, ease: 'easeOut' }}
+              >
+                {/* Eye shine */}
+                <div
+                  className="absolute rounded-full bg-white"
+                  style={{
+                    width: size * 0.04,
+                    height: size * 0.04,
+                    left: '20%',
+                    top: '20%',
+                  }}
+                />
+              </motion.div>
+            )}
           </motion.div>
 
-          {/* Right eye */}
+          {/* Right eye with blinking */}
           <motion.div
             className="absolute rounded-full bg-white overflow-hidden"
             style={{
               width: size * 0.22,
-              height: expression === 'thinking' ? size * 0.18 : size * 0.26,
               right: '22%',
-              top: expression === 'thinking' ? '32%' : '28%',
+              top: isBlinking ? '34%' : (expression === 'thinking' ? '32%' : '28%'),
               boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
             }}
-            animate={expression === 'thinking' ? {
-              scaleY: [1, 0.7, 1],
-            } : {}}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 0.1 }}
+            animate={{
+              height: getEyeHeight(),
+              scaleY: expression === 'thinking' && !isBlinking ? [1, 0.7, 1] : 1,
+            }}
+            transition={{ 
+              height: { duration: 0.1, ease: 'easeOut' },
+              scaleY: { duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 0.1 }
+            }}
           >
-            {/* Pupil - follows cursor, moves up when thinking */}
-            <motion.div
-              className="absolute rounded-full"
-              style={{
-                width: size * 0.12,
-                height: size * 0.14,
-                background: '#2D3748',
-                left: '50%',
-                top: '50%',
-              }}
-              animate={{
-                x: -size * 0.06 + (expression === 'thinking' ? 2 : eyeOffsetX),
-                y: -size * 0.07 + (expression === 'thinking' ? -2 : eyeOffsetY),
-              }}
-              transition={{ duration: 0.1, ease: 'easeOut' }}
-            >
-              {/* Eye shine */}
-              <div
-                className="absolute rounded-full bg-white"
+            {/* Pupil - hidden when blinking */}
+            {!isBlinking && (
+              <motion.div
+                className="absolute rounded-full"
                 style={{
-                  width: size * 0.04,
-                  height: size * 0.04,
-                  left: '20%',
-                  top: '20%',
+                  width: size * 0.12,
+                  height: size * 0.14,
+                  background: '#2D3748',
+                  left: '50%',
+                  top: '50%',
                 }}
-              />
-            </motion.div>
+                animate={{
+                  x: -size * 0.06 + (expression === 'thinking' ? 2 : eyeOffsetX),
+                  y: -size * 0.07 + (expression === 'thinking' ? -2 : eyeOffsetY),
+                }}
+                transition={{ duration: 0.1, ease: 'easeOut' }}
+              >
+                {/* Eye shine */}
+                <div
+                  className="absolute rounded-full bg-white"
+                  style={{
+                    width: size * 0.04,
+                    height: size * 0.04,
+                    left: '20%',
+                    top: '20%',
+                  }}
+                />
+              </motion.div>
+            )}
           </motion.div>
 
           {/* Mouth - changes based on expression/click/hover */}
@@ -380,29 +464,41 @@ export function FinBuddyMascot({
           </motion.div>
         </motion.div>
 
-        {/* Small ears/antennae */}
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: size * 0.15,
-            height: size * 0.15,
-            left: '5%',
-            top: '-5%',
-            background: primaryColor,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          }}
-        />
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: size * 0.15,
-            height: size * 0.15,
-            right: '5%',
-            top: '-5%',
-            background: primaryColor,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          }}
-        />
+        {/* Small ears/antennae - optional */}
+        {config.showEars && (
+          <>
+            <motion.div
+              className="absolute rounded-full"
+              style={{
+                width: size * 0.15,
+                height: size * 0.15,
+                left: '5%',
+                top: '-5%',
+                background: primaryColor,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              }}
+              animate={expression === 'happy' || isClicked ? {
+                rotate: [-5, 5, -5],
+              } : {}}
+              transition={{ duration: 0.3, repeat: isClicked ? 2 : 0 }}
+            />
+            <motion.div
+              className="absolute rounded-full"
+              style={{
+                width: size * 0.15,
+                height: size * 0.15,
+                right: '5%',
+                top: '-5%',
+                background: primaryColor,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              }}
+              animate={expression === 'happy' || isClicked ? {
+                rotate: [5, -5, 5],
+              } : {}}
+              transition={{ duration: 0.3, repeat: isClicked ? 2 : 0 }}
+            />
+          </>
+        )}
       </motion.div>
     </div>
   );
